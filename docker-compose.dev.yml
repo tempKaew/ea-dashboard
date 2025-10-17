@@ -1,0 +1,49 @@
+services:
+  postgres:
+    container_name: ea-db-postgres-dev
+    image: postgres:16-alpine
+    platform: linux/amd64
+    environment:
+      POSTGRES_DB: trading
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: yourpassword
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5433:5433"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dev-network
+
+  nextjs-dev:
+    container_name: ea-db-app-dev
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      DATABASE_URL: postgresql://postgres:yourpassword@postgres:5433/trading
+      NODE_ENV: development
+    ports:
+      - "3002:3002"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - dev-network
+
+volumes:
+  postgres_dev_data:
+
+networks:
+  dev-network:
+    name: ea-db-dev-network

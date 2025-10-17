@@ -1,0 +1,29 @@
+# Development Dockerfile
+FROM node:24.10-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies for node-gyp and other native modules
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Create src directory if it doesn't exist
+RUN mkdir -p src
+
+# Expose port
+EXPOSE 3001
+
+# Set environment variables
+ENV PORT=3001
+ENV HOSTNAME="0.0.0.0"
+
+# Start development server
+CMD ["npm", "run", "dev"]
