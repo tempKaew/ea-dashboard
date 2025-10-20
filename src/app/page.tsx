@@ -414,7 +414,7 @@ export default function Dashboard() {
 
         {/* Accounts List */}
         <div className="bg-stone-900 rounded-lg shadow overflow-hidden border border-stone-800">
-          <div className="px-6 py-4 border-b border-stone-700">
+          <div className="px-6 py-2 border-b border-stone-700">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-bold text-white">
                 Trading Accounts {getDateRange(dateFilter).label}
@@ -516,7 +516,7 @@ export default function Dashboard() {
               <thead className="bg-stone-800">
                 <tr>
                   <th
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase cursor-pointer hover:bg-stone-700"
+                    className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase cursor-pointer hover:bg-stone-700"
                     onClick={() => handleSort("account")}
                   >
                     <div className="flex items-center gap-1">
@@ -528,14 +528,14 @@ export default function Dashboard() {
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase">
                     Run At
                   </th>
                   <th
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase cursor-pointer hover:bg-stone-700"
+                    className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase cursor-pointer hover:bg-stone-700"
                     onClick={() => handleSort("balance")}
                   >
                     <div className="flex items-center gap-1">
@@ -548,7 +548,7 @@ export default function Dashboard() {
                     </div>
                   </th>
                   <th
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase cursor-pointer hover:bg-stone-700"
+                    className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase cursor-pointer hover:bg-stone-700"
                     onClick={() => handleSort("equity")}
                   >
                     <div className="flex items-center gap-1">
@@ -560,23 +560,23 @@ export default function Dashboard() {
                       )}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase">
                     Current P&L
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase">
                     Open
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase">
                     Buy|Sell
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase">
                     Today P&L
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase">
                     Closed
                   </th>
                   <th
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase cursor-pointer hover:bg-stone-700"
+                    className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase cursor-pointer hover:bg-stone-700"
                     onClick={() => handleSort("last_update")}
                   >
                     <div className="flex items-center gap-1">
@@ -605,7 +605,7 @@ export default function Dashboard() {
                         router.push(`/account/${account.acc_number}`)
                       }
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                      <td className="px-6 py-1 whitespace-nowrap text-sm font-medium text-white">
                         <div>#{account.acc_number}</div>
                         {account.name && (
                           <div className="text-xs text-gray-400">
@@ -613,16 +613,16 @@ export default function Dashboard() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-300">
                         {formatEmail(account.email)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-300">
                         {account.run_at_title || "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-300">
                         {formatCurrency(account.balance)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
+                      <td className="px-6 py-1 whitespace-nowrap text-sm font-semibold">
                         <span
                           className={
                             toNumber(account.equity) >=
@@ -634,7 +634,7 @@ export default function Dashboard() {
                           {formatCurrency(account.equity)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
+                      <td className="px-6 py-1 whitespace-nowrap text-sm font-semibold">
                         <span
                           className={
                             history && toNumber(history.current_profit) >= 0
@@ -647,10 +647,10 @@ export default function Dashboard() {
                             : "-"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-300">
                         {history ? history.current_total_trade : "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-6 py-1 whitespace-nowrap text-sm">
                         {history ? (
                           <>
                             <span className="text-green-400">
@@ -665,7 +665,7 @@ export default function Dashboard() {
                           <span className="text-gray-500">-</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
+                      <td className="px-6 py-1 whitespace-nowrap text-sm font-semibold">
                         <span
                           className={
                             history && toNumber(history.history_profit) >= 0
@@ -678,10 +678,10 @@ export default function Dashboard() {
                             : "-"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-300">
                         {history ? history.history_total_trade : "-"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-6 py-1 whitespace-nowrap text-sm">
                         {history ? (
                           <div className="flex items-center gap-2">
                             <div

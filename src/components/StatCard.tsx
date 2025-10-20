@@ -34,7 +34,7 @@ export default function StatCard({
 
   return (
     <div
-      className={`rounded-lg shadow p-4 border ${colorBorders[colorBorder]}`}
+      className={`rounded-lg shadow px-4 py-2 border ${colorBorders[colorBorder]}`}
     >
       <div className="flex items-center justify-between mb-1">
         <h3 className="text-xs text-gray-400">{title}</h3>
