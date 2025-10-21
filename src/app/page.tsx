@@ -1,14 +1,26 @@
 "use client";
 
 import StatCard from "@/components/StatCard";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHeader,
+  TableHeaderCell,
+  TableRow,
+} from "@/components/Table";
 import { useRealtimeTrading } from "@/hooks/useRealtimeTrading";
 import { Account, History, RunAt, TradeStats } from "@/types/trading";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-type SortField = "account" | "balance" | "equity" | "last_update";
+type SortField = "account" | "name" | "balance" | "equity" | "last_update";
 type SortDirection = "asc" | "desc";
 type DateFilter = "today" | "yesterday" | "last7days" | "last30days";
+
+interface AccountWithHistory extends Account {
+  history: History | null;
+}
 
 export default function Dashboard() {
   const router = useRouter();
@@ -47,12 +59,6 @@ export default function Dashboard() {
       minute: "2-digit",
       second: "2-digit",
     });
-  };
-
-  const formatEmail = (email: string | null) => {
-    if (!email) return "No email";
-    if (email.length <= 5) return email;
-    return email.substring(0, 5) + "...";
   };
 
   const getDateRange = (filter: DateFilter) => {
@@ -123,6 +129,10 @@ export default function Dashboard() {
             aValue = a.acc_number;
             bValue = b.acc_number;
             break;
+          case "name":
+            aValue = (a.name || "").toLowerCase();
+            bValue = (b.name || "").toLowerCase();
+            break;
           case "balance":
             aValue = toNumber(a.balance);
             bValue = toNumber(b.balance);
@@ -192,40 +202,64 @@ export default function Dashboard() {
     };
   }, [showMenu]);
 
-  // Load initial data from API
+  // Load run_at list (only once)
+  const loadRunAtList = async () => {
+    try {
+      const runAtRes = await fetch("/api/run-at");
+      const runAtData = await runAtRes.json();
+      setRunAtList(runAtData);
+      console.log("✅ Loaded run_at list");
+    } catch (error) {
+      console.error("Error loading run_at list:", error);
+    }
+  };
+
+  // Load accounts and history data
   const loadData = async () => {
     try {
       setLoading(true);
 
-      // Fetch run_at list
-      const runAtRes = await fetch("/api/run-at");
-      const runAtData = await runAtRes.json();
-      setRunAtList(runAtData);
-
-      // Fetch accounts
-      const accountsRes = await fetch("/api/trading/accounts");
-      const accountsData = await accountsRes.json();
-      setAccounts(accountsData);
-
-      // Fetch history for each account based on date filter
-      const historyMap: { [key: string]: History } = {};
+      // Fetch accounts with history in one request
       const dateRange = getDateRange(dateFilter);
+      const accountsRes = await fetch(
+        `/api/trading/accounts-with-history?start_date=${dateRange.start}&end_date=${dateRange.end}`
+      );
+      const accountsWithHistoryData = await accountsRes.json();
 
-      for (const account of accountsData) {
-        const historyRes = await fetch(
-          `/api/trading/history?acc_number=${account.acc_number}&start_date=${dateRange.start}&end_date=${dateRange.end}&limit=1`
-        );
-        const historyData = await historyRes.json();
-        if (historyData.length > 0) {
-          historyMap[account.acc_number] = historyData[0];
+      // Separate accounts and history
+      const accountsData = accountsWithHistoryData.map(
+        (item: AccountWithHistory) => ({
+          id: item.id,
+          acc_number: item.acc_number,
+          name: item.name,
+          email: item.email,
+          balance: item.balance,
+          equity: item.equity,
+          run_at_id: item.run_at_id,
+          run_at_title: item.run_at_title,
+          updated_at: item.updated_at,
+          history_count: item.history_count,
+        })
+      );
+
+      const historyMap: { [key: string]: History } = {};
+      accountsWithHistoryData.forEach((item: AccountWithHistory) => {
+        if (item.history) {
+          historyMap[item.acc_number] = item.history;
         }
-      }
+      });
+
+      setAccounts(accountsData);
       setAccountsHistory(historyMap);
 
       // Fetch stats
       const statsRes = await fetch("/api/trading/stats");
       const statsData = await statsRes.json();
       setStats(statsData);
+
+      console.log(
+        `✅ Loaded ${accountsData.length} accounts with history in 2 requests`
+      );
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -236,7 +270,8 @@ export default function Dashboard() {
 
   // Initial load
   useEffect(() => {
-    loadData();
+    loadRunAtList(); // Load run_at list once
+    loadData(); // Load accounts and history
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
@@ -511,201 +546,151 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-stone-700">
-              <thead className="bg-stone-800">
-                <tr>
-                  <th
-                    className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase cursor-pointer hover:bg-stone-700"
-                    onClick={() => handleSort("account")}
-                  >
-                    <div className="flex items-center gap-1">
-                      Account
-                      {sortField === "account" && (
-                        <span className="text-blue-400">
-                          {sortDirection === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase">
-                    Email
-                  </th>
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase">
-                    Run At
-                  </th>
-                  <th
-                    className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase cursor-pointer hover:bg-stone-700"
-                    onClick={() => handleSort("balance")}
-                  >
-                    <div className="flex items-center gap-1">
-                      Balance
-                      {sortField === "balance" && (
-                        <span className="text-blue-400">
-                          {sortDirection === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th
-                    className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase cursor-pointer hover:bg-stone-700"
-                    onClick={() => handleSort("equity")}
-                  >
-                    <div className="flex items-center gap-1">
-                      Equity
-                      {sortField === "equity" && (
-                        <span className="text-blue-400">
-                          {sortDirection === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase">
-                    Current P&L
-                  </th>
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase">
-                    Open
-                  </th>
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase">
-                    Buy|Sell
-                  </th>
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase">
-                    Today P&L
-                  </th>
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase">
-                    Closed
-                  </th>
-                  <th
-                    className="px-6 py-2 text-left text-xs font-medium text-gray-300 uppercase cursor-pointer hover:bg-stone-700"
-                    onClick={() => handleSort("last_update")}
-                  >
-                    <div className="flex items-center gap-1">
-                      Last Update
-                      {sortField === "last_update" && (
-                        <span className="text-blue-400">
-                          {sortDirection === "asc" ? "↑" : "↓"}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-stone-900 divide-y divide-stone-800">
-                {filteredAccounts.map((account) => {
-                  const history = accountsHistory[account.acc_number];
-                  const isFresh = history
-                    ? isUpdateFresh(history.updated_at)
-                    : false;
+          <Table>
+            <TableHeader>
+              <TableHeaderCell
+                sortable
+                active={sortField === "account"}
+                direction={sortDirection}
+                onClick={() => handleSort("account")}
+              >
+                Account
+              </TableHeaderCell>
+              <TableHeaderCell
+                sortable
+                active={sortField === "name"}
+                direction={sortDirection}
+                onClick={() => handleSort("name")}
+              >
+                Name
+              </TableHeaderCell>
+              <TableHeaderCell>Run At</TableHeaderCell>
+              <TableHeaderCell
+                sortable
+                active={sortField === "balance"}
+                direction={sortDirection}
+                onClick={() => handleSort("balance")}
+              >
+                Balance
+              </TableHeaderCell>
+              <TableHeaderCell
+                sortable
+                active={sortField === "equity"}
+                direction={sortDirection}
+                onClick={() => handleSort("equity")}
+              >
+                Equity
+              </TableHeaderCell>
+              <TableHeaderCell>Current P&L</TableHeaderCell>
+              <TableHeaderCell>Open</TableHeaderCell>
+              <TableHeaderCell>Buy|Sell</TableHeaderCell>
+              <TableHeaderCell>Today P&L</TableHeaderCell>
+              <TableHeaderCell>Closed</TableHeaderCell>
+              <TableHeaderCell
+                sortable
+                active={sortField === "last_update"}
+                direction={sortDirection}
+                onClick={() => handleSort("last_update")}
+              >
+                Last Update
+              </TableHeaderCell>
+            </TableHeader>
+            <TableBody>
+              {filteredAccounts.map((account) => {
+                const history = accountsHistory[account.acc_number];
+                const isFresh = history
+                  ? isUpdateFresh(history.updated_at)
+                  : false;
 
-                  return (
-                    <tr
-                      key={account.id}
-                      className="hover:bg-stone-800 cursor-pointer transition-colors"
-                      onClick={() =>
-                        router.push(`/account/${account.acc_number}`)
+                return (
+                  <TableRow
+                    key={account.id}
+                    onClick={() =>
+                      router.push(`/account/${account.acc_number}`)
+                    }
+                  >
+                    <TableCell variant="primary">
+                      <div>#{account.acc_number}</div>
+                    </TableCell>
+                    <TableCell variant="primary">
+                      <div className="font-medium text-white">
+                        {account.name || "Unnamed Account"}
+                      </div>
+                    </TableCell>
+                    <TableCell>{account.run_at_title || "-"}</TableCell>
+                    <TableCell>{formatCurrency(account.balance)}</TableCell>
+                    <TableCell
+                      variant={
+                        toNumber(account.equity) >= toNumber(account.balance)
+                          ? "success"
+                          : "danger"
                       }
                     >
-                      <td className="px-6 py-1 whitespace-nowrap text-sm font-medium text-white">
-                        <div>#{account.acc_number}</div>
-                        {account.name && (
-                          <div className="text-xs text-gray-400">
-                            {account.name}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-300">
-                        {formatEmail(account.email)}
-                      </td>
-                      <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-300">
-                        {account.run_at_title || "-"}
-                      </td>
-                      <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-300">
-                        {formatCurrency(account.balance)}
-                      </td>
-                      <td className="px-6 py-1 whitespace-nowrap text-sm font-semibold">
-                        <span
-                          className={
-                            toNumber(account.equity) >=
-                            toNumber(account.balance)
-                              ? "text-green-400"
-                              : "text-red-400"
-                          }
-                        >
-                          {formatCurrency(account.equity)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-1 whitespace-nowrap text-sm font-semibold">
-                        <span
-                          className={
-                            history && toNumber(history.current_profit) >= 0
-                              ? "text-green-400"
-                              : "text-red-400"
-                          }
-                        >
-                          {history
-                            ? formatCurrency(history.current_profit)
-                            : "-"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-300">
-                        {history ? history.current_total_trade : "-"}
-                      </td>
-                      <td className="px-6 py-1 whitespace-nowrap text-sm">
-                        {history ? (
-                          <>
-                            <span className="text-green-400">
-                              {history.current_order_buy_count}
-                            </span>
-                            <span className="text-gray-500 mx-1">|</span>
-                            <span className="text-red-400">
-                              {history.current_order_sell_count}
-                            </span>
-                          </>
-                        ) : (
+                      {formatCurrency(account.equity)}
+                    </TableCell>
+                    <TableCell
+                      variant={
+                        history && toNumber(history.current_profit) >= 0
+                          ? "success"
+                          : "danger"
+                      }
+                    >
+                      {history ? formatCurrency(history.current_profit) : "-"}
+                    </TableCell>
+                    <TableCell>
+                      {history ? history.current_total_trade : "-"}
+                    </TableCell>
+                    <TableCell>
+                      {history ? (
+                        <>
+                          <span className="text-green-400">
+                            {history.current_order_buy_count}
+                          </span>
+                          <span className="text-gray-500 mx-1">|</span>
+                          <span className="text-red-400">
+                            {history.current_order_sell_count}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-gray-500">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell
+                      variant={
+                        history && toNumber(history.history_profit) >= 0
+                          ? "success"
+                          : "danger"
+                      }
+                    >
+                      {history ? formatCurrency(history.history_profit) : "-"}
+                    </TableCell>
+                    <TableCell>
+                      {history ? history.history_total_trade : "-"}
+                    </TableCell>
+                    <TableCell>
+                      {history ? (
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              isFresh ? "bg-green-500" : "bg-red-500"
+                            }`}
+                          />
+                          <span className="text-gray-300">
+                            {formatTime(history.updated_at)}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-gray-500" />
                           <span className="text-gray-500">-</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-1 whitespace-nowrap text-sm font-semibold">
-                        <span
-                          className={
-                            history && toNumber(history.history_profit) >= 0
-                              ? "text-green-400"
-                              : "text-red-400"
-                          }
-                        >
-                          {history
-                            ? formatCurrency(history.history_profit)
-                            : "-"}
-                        </span>
-                      </td>
-                      <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-300">
-                        {history ? history.history_total_trade : "-"}
-                      </td>
-                      <td className="px-6 py-1 whitespace-nowrap text-sm">
-                        {history ? (
-                          <div className="flex items-center gap-2">
-                            <div
-                              className={`w-2 h-2 rounded-full ${
-                                isFresh ? "bg-green-500" : "bg-red-500"
-                              }`}
-                            />
-                            <span className="text-gray-300">
-                              {formatTime(history.updated_at)}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-gray-500" />
-                            <span className="text-gray-500">-</span>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         </div>
       </div>
     </div>
