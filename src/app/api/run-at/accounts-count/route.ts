@@ -1,4 +1,4 @@
-import pool from "@/lib/db";
+import { supabaseServer } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -13,13 +13,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await pool.query(
-      `SELECT COUNT(*) as count FROM accounts WHERE run_at_id = $1`,
-      [runAtId]
-    );
+    const { count, error } = await supabaseServer
+      .from("accounts")
+      .select("*", { count: "exact", head: true })
+      .eq("run_at_id", runAtId);
+
+    if (error) {
+      throw error;
+    }
 
     return NextResponse.json({
-      count: parseInt(result.rows[0].count),
+      count: count || 0,
     });
   } catch (error) {
     console.error("Error fetching accounts count:", error);

@@ -1,4 +1,4 @@
-import pool from "@/lib/db";
+import { supabaseServer } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -6,35 +6,73 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const accNumber = searchParams.get("acc_number");
 
-    let query = `
-      SELECT 
-        a.id,
-        a.acc_number,
-        a.name,
-        a.email,
-        a.balance,
-        a.equity,
-        a.run_at_id,
-        r.title as run_at_title,
-        a.updated_at,
-        COUNT(h.id) as history_count
-      FROM accounts a
-      LEFT JOIN run_at r ON a.run_at_id = r.id
-      LEFT JOIN history h ON a.id = h.account_id
-    `;
-
-    const params: (string | number)[] = [];
+    let accountsQuery = supabaseServer
+      .from("accounts")
+      .select(
+        `
+        id,
+        acc_number,
+        name,
+        email,
+        balance,
+        equity,
+        run_at_id,
+        updated_at,
+        run_at:run_at_id (
+          title
+        )
+      `
+      )
+      .order("updated_at", { ascending: false });
 
     if (accNumber) {
-      query += ` WHERE a.acc_number = $1`;
-      params.push(accNumber);
+      accountsQuery = accountsQuery.eq("acc_number", accNumber);
     }
 
-    query += ` GROUP BY a.id, a.acc_number, a.name, a.email, a.balance, a.equity, a.run_at_id, r.title, a.updated_at ORDER BY a.updated_at DESC`;
+    const { data: accounts, error: accountsError } = await accountsQuery;
 
-    const result = await pool.query(query, params);
+    if (accountsError) {
+      throw accountsError;
+    }
 
-    return NextResponse.json(result.rows);
+    // Get history count for each account
+    const accountIds = accounts?.map((a) => a.id) || [];
+    const { data: histories, error: historiesError } = await supabaseServer
+      .from("history")
+      .select("account_id")
+      .in("account_id", accountIds);
+
+    if (historiesError) {
+      throw historiesError;
+    }
+
+    // Count history per account
+    const historyCountMap: { [key: number]: number } = {};
+    histories?.forEach((h) => {
+      historyCountMap[h.account_id] = (historyCountMap[h.account_id] || 0) + 1;
+    });
+
+    // Transform to match expected format
+    const result = accounts?.map((account) => {
+      const runAt = Array.isArray(account.run_at)
+        ? account.run_at[0]
+        : account.run_at;
+
+      return {
+        id: account.id,
+        acc_number: account.acc_number,
+        name: account.name,
+        email: account.email,
+        balance: account.balance,
+        equity: account.equity,
+        run_at_id: account.run_at_id,
+        run_at_title: runAt?.title || null,
+        updated_at: account.updated_at,
+        history_count: historyCountMap[account.id] || 0,
+      };
+    });
+
+    return NextResponse.json(result || []);
   } catch (error) {
     console.error("Error fetching accounts:", error);
     return NextResponse.json(
@@ -59,21 +97,29 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { name, email, run_at_id } = body;
 
-    const result = await pool.query(
-      `UPDATE accounts 
-       SET name = $1, email = $2, run_at_id = $3, updated_at = NOW()
-       WHERE acc_number = $4
-       RETURNING *`,
-      [name, email, run_at_id, accNumber]
-    );
+    const { data, error } = await supabaseServer
+      .from("accounts")
+      .update({
+        name,
+        email,
+        run_at_id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("acc_number", accNumber)
+      .select()
+      .single();
 
-    if (result.rows.length === 0) {
+    if (error) {
+      throw error;
+    }
+
+    if (!data) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
-      account: result.rows[0],
+      account: data,
       message: "Account updated successfully",
     });
   } catch (error) {
@@ -86,8 +132,6 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const client = await pool.connect();
-
   try {
     const { searchParams } = new URL(request.url);
     const accNumber = searchParams.get("acc_number");
@@ -99,45 +143,48 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await client.query("BEGIN");
-
     // First get the account ID
-    const accountResult = await client.query(
-      `SELECT id FROM accounts WHERE acc_number = $1`,
-      [accNumber]
-    );
+    const { data: account, error: accountError } = await supabaseServer
+      .from("accounts")
+      .select("id")
+      .eq("acc_number", accNumber)
+      .single();
 
-    if (accountResult.rows.length === 0) {
-      await client.query("ROLLBACK");
+    if (accountError || !account) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 });
     }
 
-    const accountId = accountResult.rows[0].id;
+    const accountId = account.id;
 
-    // Delete all history records for this account
-    await client.query(`DELETE FROM history WHERE account_id = $1`, [
-      accountId,
-    ]);
+    // Delete all history records for this account (CASCADE should handle this, but doing explicitly)
+    const { error: historyError } = await supabaseServer
+      .from("history")
+      .delete()
+      .eq("account_id", accountId);
+
+    if (historyError) {
+      throw historyError;
+    }
 
     // Delete the account
-    await client.query(`DELETE FROM accounts WHERE acc_number = $1`, [
-      accNumber,
-    ]);
+    const { error: deleteError } = await supabaseServer
+      .from("accounts")
+      .delete()
+      .eq("acc_number", accNumber);
 
-    await client.query("COMMIT");
+    if (deleteError) {
+      throw deleteError;
+    }
 
     return NextResponse.json({
       success: true,
       message: "Account and all related history deleted successfully",
     });
   } catch (error) {
-    await client.query("ROLLBACK");
     console.error("Error deleting account:", error);
     return NextResponse.json(
       { error: "Failed to delete account" },
       { status: 500 }
     );
-  } finally {
-    client.release();
   }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { supabaseServer } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,55 +10,60 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get("limit") || "30";
     const offset = searchParams.get("offset") || "0";
 
-    let query = `
-      SELECT 
-        h.*,
-        a.acc_number,
-        a.email,
-        a.balance,
-        a.equity
-      FROM history h
-      JOIN accounts a ON h.account_id = a.id
-      WHERE 1=1
-    `;
-
-    const params: (string | number)[] = [];
-    let paramIndex = 1;
+    let historyQuery = supabaseServer
+      .from("history")
+      .select(
+        `
+        *,
+        accounts!inner (
+          acc_number,
+          email,
+          balance,
+          equity
+        )
+      `
+      )
+      .order("date", { ascending: false })
+      .order("updated_at", { ascending: false });
 
     if (accNumber) {
-      query += ` AND a.acc_number = $${paramIndex}`;
-      params.push(accNumber);
-      paramIndex++;
+      historyQuery = historyQuery.eq("accounts.acc_number", accNumber);
     }
 
     if (startDate) {
-      query += ` AND h.date >= $${paramIndex}`;
-      params.push(startDate);
-      paramIndex++;
+      historyQuery = historyQuery.gte("date", startDate);
     }
 
     if (endDate) {
-      query += ` AND h.date <= $${paramIndex}`;
-      params.push(endDate);
-      paramIndex++;
+      historyQuery = historyQuery.lte("date", endDate);
     }
-
-    query += ` ORDER BY h.date DESC, h.updated_at DESC`;
 
     if (limit !== "-1") {
-      query += ` LIMIT $${paramIndex}`;
-      params.push(parseInt(limit));
-      paramIndex++;
-
-      if (offset !== "0") {
-        query += ` OFFSET $${paramIndex}`;
-        params.push(parseInt(offset));
-      }
+      historyQuery = historyQuery.range(
+        parseInt(offset),
+        parseInt(offset) + parseInt(limit) - 1
+      );
     }
 
-    const result = await pool.query(query, params);
+    const { data: histories, error } = await historyQuery;
 
-    return NextResponse.json(result.rows);
+    if (error) {
+      throw error;
+    }
+
+    // Transform to match expected format
+    const result = histories?.map((h) => {
+      const account = Array.isArray(h.accounts) ? h.accounts[0] : h.accounts;
+      return {
+        ...h,
+        acc_number: account?.acc_number,
+        email: account?.email,
+        balance: account?.balance,
+        equity: account?.equity,
+      };
+    });
+
+    return NextResponse.json(result || []);
   } catch (error) {
     console.error("Error fetching history:", error);
     return NextResponse.json(

@@ -1,4 +1,4 @@
-import pool from "@/lib/db";
+import { supabaseServer } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -12,94 +12,123 @@ export async function GET(request: NextRequest) {
     const filterStartDate = startDate || today;
     const filterEndDate = endDate || today;
 
-    const query = `
-      SELECT 
-        a.id,
-        a.acc_number,
-        a.name,
-        a.email,
-        a.balance,
-        a.equity,
-        a.run_at_id,
-        r.title as run_at_title,
-        a.updated_at as account_updated_at,
-        
-        -- History data (latest record within date range)
-        h.id as history_id,
-        h.date as history_date,
-        h.current_total_trade,
-        h.current_profit,
-        h.current_lot,
-        h.current_order_buy_count,
-        h.current_order_sell_count,
-        h.history_total_trade,
-        h.history_profit,
-        h.history_lot,
-        h.history_order_buy_count,
-        h.history_order_sell_count,
-        h.history_win,
-        h.history_loss,
-        h.updated_at as history_updated_at,
-        
-        -- History count
-        (SELECT COUNT(*) FROM history h2 WHERE h2.account_id = a.id) as history_count
-        
-      FROM accounts a
-      LEFT JOIN run_at r ON a.run_at_id = r.id
-      LEFT JOIN LATERAL (
-        SELECT * FROM history h3 
-        WHERE h3.account_id = a.id 
-        AND h3.date BETWEEN $1 AND $2
-        ORDER BY h3.date DESC, h3.updated_at DESC
-        LIMIT 1
-      ) h ON true
-      ORDER BY a.updated_at DESC
-    `;
+    // Fetch accounts with run_at
+    const { data: accounts, error: accountsError } = await supabaseServer
+      .from("accounts")
+      .select(
+        `
+        id,
+        acc_number,
+        name,
+        email,
+        balance,
+        equity,
+        run_at_id,
+        updated_at,
+        run_at:run_at_id (
+          title
+        )
+      `
+      )
+      .order("updated_at", { ascending: false });
 
-    const result = await pool.query(query, [filterStartDate, filterEndDate]);
+    if (accountsError) {
+      throw accountsError;
+    }
+
+    // Fetch history count for each account
+    const accountIds = accounts?.map((a) => a.id) || [];
+    const { data: historyCounts, error: historyCountError } =
+      await supabaseServer
+        .from("history")
+        .select("account_id")
+        .in("account_id", accountIds);
+
+    if (historyCountError) {
+      throw historyCountError;
+    }
+
+    // Count history per account
+    const historyCountMap: { [key: number]: number } = {};
+    historyCounts?.forEach((h) => {
+      historyCountMap[h.account_id] = (historyCountMap[h.account_id] || 0) + 1;
+    });
+
+    // Fetch latest history for each account within date range
+    const { data: histories, error: historiesError } = await supabaseServer
+      .from("history")
+      .select("*")
+      .in("account_id", accountIds)
+      .gte("date", filterStartDate)
+      .lte("date", filterEndDate)
+      .order("date", { ascending: false })
+      .order("updated_at", { ascending: false });
+
+    if (historiesError) {
+      throw historiesError;
+    }
+
+    // Group histories by account_id and get the latest one
+    const latestHistoryMap: { [key: number]: typeof histories[0] } = {};
+    histories?.forEach((h) => {
+      if (
+        !latestHistoryMap[h.account_id] ||
+        new Date(h.updated_at) >
+          new Date(latestHistoryMap[h.account_id].updated_at)
+      ) {
+        latestHistoryMap[h.account_id] = h;
+      }
+    });
 
     // Transform the result to match the expected format
-    const accountsWithHistory = result.rows.map((row) => ({
-      // Account data
-      id: row.id,
-      acc_number: row.acc_number,
-      name: row.name,
-      email: row.email,
-      balance: row.balance,
-      equity: row.equity,
-      run_at_id: row.run_at_id,
-      run_at_title: row.run_at_title,
-      updated_at: row.account_updated_at,
-      history_count: parseInt(row.history_count),
+    const accountsWithHistory = accounts?.map((account) => {
+      const history = latestHistoryMap[account.id];
+      const runAt = Array.isArray(account.run_at)
+        ? account.run_at[0]
+        : account.run_at;
 
-      // History data (if exists)
-      history: row.history_id
-        ? {
-            id: row.history_id,
-            account_id: row.id,
-            acc_number: row.acc_number,
-            email: row.email,
-            date: row.history_date,
-            balance: row.balance,
-            equity: row.equity,
-            current_total_trade: row.current_total_trade,
-            current_profit: row.current_profit,
-            current_lot: row.current_lot,
-            current_order_buy_count: row.current_order_buy_count,
-            current_order_sell_count: row.current_order_sell_count,
-            history_total_trade: row.history_total_trade,
-            history_profit: row.history_profit,
-            history_lot: row.history_lot,
-            history_order_buy_count: row.history_order_buy_count,
-            history_order_sell_count: row.history_order_sell_count,
-            history_win: row.history_win,
-            history_loss: row.history_loss,
-            updated_at: row.history_updated_at,
-          }
-        : null,
-    }));
+      return {
+        // Account data
+        id: account.id,
+        acc_number: account.acc_number,
+        name: account.name,
+        email: account.email,
+        balance: account.balance,
+        equity: account.equity,
+        run_at_id: account.run_at_id,
+        run_at_title: runAt?.title || null,
+        updated_at: account.updated_at,
+        history_count: historyCountMap[account.id] || 0,
 
-    return NextResponse.json(accountsWithHistory);
+        // History data (if exists)
+        history: history
+          ? {
+              id: history.id,
+              account_id: history.account_id,
+              acc_number: account.acc_number,
+              email: account.email,
+              date: history.date,
+              balance: account.balance,
+              equity: account.equity,
+              current_total_trade: history.current_total_trade,
+              current_profit: history.current_profit,
+              current_lot: history.current_lot,
+              current_order_buy_count: history.current_order_buy_count,
+              current_order_sell_count: history.current_order_sell_count,
+              history_total_trade: history.history_total_trade,
+              history_profit: history.history_profit,
+              history_lot: history.history_lot,
+              history_order_buy_count: history.history_order_buy_count,
+              history_order_sell_count: history.history_order_sell_count,
+              history_win: history.history_win,
+              history_loss: history.history_loss,
+              updated_at: history.updated_at,
+            }
+          : null,
+      };
+    });
+
+    return NextResponse.json(accountsWithHistory || []);
   } catch (error) {
     console.error("Error fetching accounts with history:", error);
     return NextResponse.json(

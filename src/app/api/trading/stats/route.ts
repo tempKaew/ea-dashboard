@@ -1,4 +1,4 @@
-import pool from "@/lib/db";
+import { supabaseServer } from "@/lib/supabase";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -7,128 +7,219 @@ export async function GET(request: NextRequest) {
     const accNumber = searchParams.get("acc_number");
 
     // Step 1: Get accounts stats (all accounts or specific account)
-    let accountsQuery = `
-      SELECT 
-        COUNT(a.id) as total_accounts,
-        COALESCE(SUM(a.balance), 0) as total_balance,
-        COALESCE(SUM(a.equity), 0) as total_equity
-      FROM accounts a
-    `;
-
-    const accountsParams: (string | number)[] = [];
+    let accountsQuery = supabaseServer
+      .from("accounts")
+      .select("id, balance, equity, acc_number");
 
     if (accNumber) {
-      accountsQuery += ` WHERE a.acc_number = $1`;
-      accountsParams.push(accNumber);
+      accountsQuery = accountsQuery.eq("acc_number", accNumber);
     }
 
-    const accountsResult = await pool.query(accountsQuery, accountsParams);
-    const accountsStats = accountsResult.rows[0];
+    const { data: accounts, error: accountsError } = await accountsQuery;
+
+    if (accountsError) {
+      throw accountsError;
+    }
+
+    const accountsStats = {
+      total_accounts: accounts?.length || 0,
+      total_balance:
+        accounts?.reduce((sum, a) => sum + parseFloat(String(a.balance || 0)), 0) || 0,
+      total_equity:
+        accounts?.reduce((sum, a) => sum + parseFloat(String(a.equity || 0)), 0) || 0,
+    };
 
     // Step 2: Get today's history stats (only today's data)
-    let historyQuery = `
-      SELECT 
-        COALESCE(SUM(h.current_total_trade), 0) as total_open_trades,
-        COALESCE(SUM(h.current_profit), 0) as total_open_profit,
-        COALESCE(SUM(h.history_total_trade), 0) as total_closed_trades,
-        COALESCE(SUM(h.history_profit), 0) as total_closed_profit,
-        COALESCE(SUM(h.history_win), 0) as total_wins,
-        COALESCE(SUM(h.history_loss), 0) as total_losses
-      FROM history h
-      JOIN accounts a ON h.account_id = a.id
-      WHERE h.date = CURRENT_DATE
-    `;
-
-    const historyParams: (string | number)[] = [];
-
+    const today = new Date().toISOString().split("T")[0];
+    
+    // First get account IDs if filtering by acc_number
+    let accountIds: number[] | undefined;
     if (accNumber) {
-      historyQuery += ` AND a.acc_number = $1`;
-      historyParams.push(accNumber);
+      const { data: filteredAccounts } = await supabaseServer
+        .from("accounts")
+        .select("id")
+        .eq("acc_number", accNumber);
+      accountIds = filteredAccounts?.map((a) => a.id);
+      if (!accountIds || accountIds.length === 0) {
+        accountIds = []; // No accounts found, return empty stats
+      }
     }
 
-    const historyResult = await pool.query(historyQuery, historyParams);
-    const historyStats = historyResult.rows[0] || {
-      total_open_trades: 0,
-      total_open_profit: 0,
-      total_closed_trades: 0,
-      total_closed_profit: 0,
-      total_wins: 0,
-      total_losses: 0,
+    let historyQuery = supabaseServer
+      .from("history")
+      .select(
+        `
+        current_total_trade,
+        current_profit,
+        history_total_trade,
+        history_profit,
+        history_win,
+        history_loss,
+        account_id,
+        accounts!inner (
+          acc_number
+        )
+      `
+      )
+      .eq("date", today);
+
+    if (accountIds !== undefined) {
+      historyQuery = historyQuery.in("account_id", accountIds);
+    }
+
+    const { data: histories, error: historiesError } = await historyQuery;
+
+    if (historiesError) {
+      throw historiesError;
+    }
+
+    const historyStats = {
+      total_open_trades:
+        histories?.reduce(
+          (sum, h) => sum + parseInt(String(h.current_total_trade || 0)),
+          0
+        ) || 0,
+      total_open_profit:
+        histories?.reduce(
+          (sum, h) => sum + parseFloat(String(h.current_profit || 0)),
+          0
+        ) || 0,
+      total_closed_trades:
+        histories?.reduce(
+          (sum, h) => sum + parseInt(String(h.history_total_trade || 0)),
+          0
+        ) || 0,
+      total_closed_profit:
+        histories?.reduce(
+          (sum, h) => sum + parseFloat(String(h.history_profit || 0)),
+          0
+        ) || 0,
+      total_wins:
+        histories?.reduce(
+          (sum, h) => sum + parseInt(String(h.history_win || 0)),
+          0
+        ) || 0,
+      total_losses:
+        histories?.reduce(
+          (sum, h) => sum + parseInt(String(h.history_loss || 0)),
+          0
+        ) || 0,
     };
 
     // Step 3: Get previous business day stats
     // If today is Monday (1), get Friday's data (3 days ago)
     // Otherwise get yesterday's data (1 day ago)
-    let previousDayQuery = `
-      SELECT 
-        COALESCE(SUM(h.current_total_trade), 0) as before_total_open_trades,
-        COALESCE(SUM(h.current_profit), 0) as before_total_open_profit,
-        COALESCE(SUM(h.history_total_trade), 0) as before_total_closed_trades,
-        COALESCE(SUM(h.history_profit), 0) as before_total_closed_profit,
-        COALESCE(SUM(h.history_win), 0) as before_total_wins,
-        COALESCE(SUM(h.history_loss), 0) as before_total_losses
-      FROM history h
-      JOIN accounts a ON h.account_id = a.id
-      WHERE h.date = CASE 
-        WHEN EXTRACT(DOW FROM CURRENT_DATE) = 1 THEN CURRENT_DATE - INTERVAL '3 days'  -- Monday: get Friday
-        WHEN EXTRACT(DOW FROM CURRENT_DATE) = 0 THEN CURRENT_DATE - INTERVAL '2 days'  -- Sunday: get Friday  
-        ELSE CURRENT_DATE - INTERVAL '1 day'  -- Other days: get yesterday
-      END
-    `;
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    let previousDate: Date;
 
-    const previousDayParams: (string | number)[] = [];
-
-    if (accNumber) {
-      previousDayQuery += ` AND a.acc_number = $1`;
-      previousDayParams.push(accNumber);
+    if (dayOfWeek === 1) {
+      // Monday: get Friday (3 days ago)
+      previousDate = new Date(now);
+      previousDate.setDate(previousDate.getDate() - 3);
+    } else if (dayOfWeek === 0) {
+      // Sunday: get Friday (2 days ago)
+      previousDate = new Date(now);
+      previousDate.setDate(previousDate.getDate() - 2);
+    } else {
+      // Other days: get yesterday
+      previousDate = new Date(now);
+      previousDate.setDate(previousDate.getDate() - 1);
     }
 
-    const previousDayResult = await pool.query(
-      previousDayQuery,
-      previousDayParams
-    );
-    const previousDayStats = previousDayResult.rows[0] || {
-      before_total_open_trades: 0,
-      before_total_open_profit: 0,
-      before_total_closed_trades: 0,
-      before_total_closed_profit: 0,
-      before_total_wins: 0,
-      before_total_losses: 0,
+    const previousDateStr = previousDate.toISOString().split("T")[0];
+
+    let previousDayQuery = supabaseServer
+      .from("history")
+      .select(
+        `
+        current_total_trade,
+        current_profit,
+        history_total_trade,
+        history_profit,
+        history_win,
+        history_loss,
+        account_id,
+        accounts!inner (
+          acc_number
+        )
+      `
+      )
+      .eq("date", previousDateStr);
+
+    if (accountIds !== undefined) {
+      previousDayQuery = previousDayQuery.in("account_id", accountIds);
+    }
+
+    const { data: previousHistories, error: previousHistoriesError } =
+      await previousDayQuery;
+
+    if (previousHistoriesError) {
+      throw previousHistoriesError;
+    }
+
+    const previousDayStats = {
+      before_total_open_trades:
+        previousHistories?.reduce(
+          (sum, h) => sum + parseInt(String(h.current_total_trade || 0)),
+          0
+        ) || 0,
+      before_total_open_profit:
+        previousHistories?.reduce(
+          (sum, h) => sum + parseFloat(String(h.current_profit || 0)),
+          0
+        ) || 0,
+      before_total_closed_trades:
+        previousHistories?.reduce(
+          (sum, h) => sum + parseInt(String(h.history_total_trade || 0)),
+          0
+        ) || 0,
+      before_total_closed_profit:
+        previousHistories?.reduce(
+          (sum, h) => sum + parseFloat(String(h.history_profit || 0)),
+          0
+        ) || 0,
+      before_total_wins:
+        previousHistories?.reduce(
+          (sum, h) => sum + parseInt(String(h.history_win || 0)),
+          0
+        ) || 0,
+      before_total_losses:
+        previousHistories?.reduce(
+          (sum, h) => sum + parseInt(String(h.history_loss || 0)),
+          0
+        ) || 0,
     };
 
     // Step 4: Calculate win rate
-    const totalClosedTrades = parseInt(historyStats.total_closed_trades) || 0;
-    const totalWins = parseInt(historyStats.total_wins) || 0;
+    const totalClosedTrades = historyStats.total_closed_trades;
+    const totalWins = historyStats.total_wins;
     const winRate =
       totalClosedTrades > 0 ? (totalWins / totalClosedTrades) * 100 : 0;
 
     // Step 5: Combine results
     const combinedStats = {
       // From accounts table
-      total_accounts: parseInt(accountsStats.total_accounts) || 0,
-      total_balance: parseFloat(accountsStats.total_balance) || 0,
-      total_equity: parseFloat(accountsStats.total_equity) || 0,
+      total_accounts: accountsStats.total_accounts,
+      total_balance: accountsStats.total_balance,
+      total_equity: accountsStats.total_equity,
 
       // From today's history
-      total_open_trades: parseInt(historyStats.total_open_trades) || 0,
-      total_open_profit: parseFloat(historyStats.total_open_profit) || 0,
-      total_closed_trades: totalClosedTrades,
-      total_closed_profit: parseFloat(historyStats.total_closed_profit) || 0,
-      total_wins: totalWins,
-      total_losses: parseInt(historyStats.total_losses) || 0,
+      total_open_trades: historyStats.total_open_trades,
+      total_open_profit: historyStats.total_open_profit,
+      total_closed_trades: historyStats.total_closed_trades,
+      total_closed_profit: historyStats.total_closed_profit,
+      total_wins: historyStats.total_wins,
+      total_losses: historyStats.total_losses,
       win_rate: Math.round(winRate * 100) / 100, // Round to 2 decimal places
 
       // From previous business day
-      before_total_open_trades:
-        parseInt(previousDayStats.before_total_open_trades) || 0,
-      before_total_open_profit:
-        parseFloat(previousDayStats.before_total_open_profit) || 0,
-      before_total_closed_trades:
-        parseInt(previousDayStats.before_total_closed_trades) || 0,
-      before_total_closed_profit:
-        parseFloat(previousDayStats.before_total_closed_profit) || 0,
-      before_total_wins: parseInt(previousDayStats.before_total_wins) || 0,
-      before_total_losses: parseInt(previousDayStats.before_total_losses) || 0,
+      before_total_open_trades: previousDayStats.before_total_open_trades,
+      before_total_open_profit: previousDayStats.before_total_open_profit,
+      before_total_closed_trades: previousDayStats.before_total_closed_trades,
+      before_total_closed_profit: previousDayStats.before_total_closed_profit,
+      before_total_wins: previousDayStats.before_total_wins,
+      before_total_losses: previousDayStats.before_total_losses,
     };
 
     return NextResponse.json(combinedStats);

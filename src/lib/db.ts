@@ -1,10 +1,5 @@
-import { Pool } from "pg";
+// This file is deprecated - use @/lib/supabase instead
+// Keeping for backward compatibility during migration
+import { supabaseServer } from "./supabase";
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
-
-export default pool;
+export default supabaseServer;

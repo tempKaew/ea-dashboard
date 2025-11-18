@@ -286,8 +286,26 @@ export default function Dashboard() {
   // Refresh when real-time update received
   useEffect(() => {
     if (latestUpdate && !isInitialLoad) {
-      console.log("New update received, refreshing data...", latestUpdate);
-      loadData();
+      const { table, eventType } = latestUpdate;
+      console.log(
+        `🔄 Real-time update received: ${eventType} on ${table} table, refreshing data...`,
+        latestUpdate
+      );
+
+      // Reload data immediately when history is updated/inserted
+      if (
+        table === "history" &&
+        (eventType === "INSERT" || eventType === "UPDATE")
+      ) {
+        console.log("📊 History changed, reloading dashboard data...");
+        loadData();
+      } else if (
+        table === "accounts" &&
+        (eventType === "INSERT" || eventType === "UPDATE")
+      ) {
+        console.log("👤 Account changed, reloading dashboard data...");
+        loadData();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [latestUpdate]);
