@@ -143,20 +143,12 @@ export default function AccountDetail() {
     }
   }, [currentPage, itemsPerPage, loadHistory, account]);
 
-  // Refresh when real-time update received
-  useEffect(() => {
-    if (latestUpdate) {
-      console.log(
-        "New update received, refreshing account data...",
-        latestUpdate
-      );
-      loadData();
-      // Also refresh history if we're on the first page
-      if (currentPage === 1) {
-        loadHistory(1, itemsPerPage);
-      }
+  const handleManualRefresh = async () => {
+    await loadData();
+    if (account) {
+      await loadHistory(currentPage, itemsPerPage);
     }
-  }, [latestUpdate, loadData, currentPage, itemsPerPage, loadHistory]);
+  };
 
   // Save account changes
   const handleSave = async () => {
@@ -274,22 +266,34 @@ export default function AccountDetail() {
               <h1 className="text-3xl font-bold text-white">
                 Account #{account.acc_number}
               </h1>
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
-              >
-                Delete Account
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleManualRefresh}
+                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                >
+                  Refresh
+                </button>
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                >
+                  Delete Account
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <div
                   className={`w-3 h-3 rounded-full ${
-                    isConnected ? "bg-green-500 animate-pulse" : "bg-red-500"
+                    isUpdateFresh(account.updated_at)
+                      ? "bg-green-500"
+                      : "bg-red-500"
                   }`}
                 />
                 <span className="text-sm font-medium text-gray-300">
-                  {isConnected ? "Live" : "Disconnected"}
+                  {isUpdateFresh(account.updated_at)
+                    ? "Updated recently"
+                    : "Stale data"}
                 </span>
               </div>
               <div className="text-sm text-gray-400">
