@@ -1,6 +1,5 @@
 "use client";
 
-import { useRealtimeTrading } from "@/hooks/useRealtimeTrading";
 import { Account, History, RunAt } from "@/types/trading";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -26,7 +25,12 @@ export default function AccountDetail() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
-  const { latestUpdate, isConnected } = useRealtimeTrading();
+  const isUpdateFresh = (updatedAt: string) => {
+    const updateTime = new Date(updatedAt);
+    const now = new Date();
+    const diffMinutes = (now.getTime() - updateTime.getTime()) / (1000 * 60);
+    return diffMinutes <= 5;
+  };
 
   // Helper function to safely convert database strings to numbers
   const toNumber = (value: string | number): number => {
