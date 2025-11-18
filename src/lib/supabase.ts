@@ -10,8 +10,7 @@ if (process.env.NODE_ENV === "development") {
   console.log("🔍 Supabase Environment Variables Check:");
   console.log(
     "NEXT_PUBLIC_SUPABASE_URL:",
-    supabaseUrl ? "✅ Set" : "❌ Missing",
-    supabaseUrl ? `(${supabaseUrl.substring(0, 30)}...)` : ""
+    supabaseUrl ? "✅ Set" : "❌ Missing"
   );
   console.log(
     "SUPABASE_SERVICE_ROLE_KEY:",
@@ -19,8 +18,7 @@ if (process.env.NODE_ENV === "development") {
   );
   console.log(
     "NEXT_PUBLIC_SUPABASE_ANON_KEY:",
-    supabaseAnonKey ? "✅ Set" : "❌ Missing",
-    supabaseAnonKey ? `(${supabaseAnonKey.substring(0, 20)}...)` : ""
+    supabaseAnonKey ? "✅ Set" : "❌ Missing"
   );
 }
 
