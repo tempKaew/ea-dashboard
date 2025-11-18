@@ -44,7 +44,7 @@ export function useRealtimeTrading() {
 
       // For history table, reload immediately (no debounce)
       // For accounts table, use short debounce (1 second)
-      const debounceTime = updateData.table === "history" ? 3000 : 4000; // 500ms for history, 1s for accounts
+      const debounceTime = updateData.table === "history" ? 5000 : 8000; // 500ms for history, 1s for accounts
 
       debounceTimeoutRef.current = setTimeout(() => {
         console.log(
