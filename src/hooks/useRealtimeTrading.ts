@@ -11,7 +11,9 @@ interface RealtimePayload {
 }
 
 export function useRealtimeTrading() {
-  const [latestUpdate, setLatestUpdate] = useState<RealtimePayload | null>(null);
+  const [latestUpdate, setLatestUpdate] = useState<RealtimePayload | null>(
+    null
+  );
   const [isConnected, setIsConnected] = useState(false);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingUpdateRef = useRef<RealtimePayload | null>(null);
@@ -42,8 +44,7 @@ export function useRealtimeTrading() {
 
       // For history table, reload immediately (no debounce)
       // For accounts table, use short debounce (1 second)
-      const debounceTime =
-        updateData.table === "history" ? 500 : 1000; // 500ms for history, 1s for accounts
+      const debounceTime = updateData.table === "history" ? 1500 : 2000; // 500ms for history, 1s for accounts
 
       debounceTimeoutRef.current = setTimeout(() => {
         console.log(
@@ -95,9 +96,11 @@ export function useRealtimeTrading() {
       .subscribe((status) => {
         console.log("Supabase Realtime status:", status);
         setIsConnected(status === "SUBSCRIBED");
-        
+
         if (status === "SUBSCRIBED") {
-          console.log("✅ Successfully subscribed to accounts and history tables");
+          console.log(
+            "✅ Successfully subscribed to accounts and history tables"
+          );
         } else if (status === "CHANNEL_ERROR") {
           console.error("❌ Error subscribing to Supabase Realtime");
         }
