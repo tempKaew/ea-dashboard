@@ -43,8 +43,7 @@ export function useRealtimeTrading() {
       }
 
       // For history table, reload immediately (no debounce)
-      // For accounts table, use short debounce (1 second)
-      const debounceTime = updateData.table === "history" ? 5000 : 8000; // 500ms for history, 1s for accounts
+      const debounceTime = 5000;
 
       debounceTimeoutRef.current = setTimeout(() => {
         console.log(
@@ -56,26 +55,9 @@ export function useRealtimeTrading() {
       }, debounceTime);
     };
 
-    // Subscribe to changes on accounts and history tables
-    const accountsChannel = supabaseClient
+    // Subscribe to changes on history tables
+    const tradingChannel = supabaseClient
       .channel("trading-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "accounts",
-        },
-        (payload) => {
-          console.log("📈 Account update received:", payload);
-          handleUpdate({
-            eventType: payload.eventType,
-            new: payload.new as Record<string, unknown>,
-            old: payload.old as Record<string, unknown>,
-            table: "accounts",
-          });
-        }
-      )
       .on(
         "postgres_changes",
         {
@@ -98,9 +80,7 @@ export function useRealtimeTrading() {
         setIsConnected(status === "SUBSCRIBED");
 
         if (status === "SUBSCRIBED") {
-          console.log(
-            "✅ Successfully subscribed to accounts and history tables"
-          );
+          console.log("✅ Successfully subscribed to history tables");
         } else if (status === "CHANNEL_ERROR") {
           console.error("❌ Error subscribing to Supabase Realtime");
         }
@@ -114,7 +94,7 @@ export function useRealtimeTrading() {
         clearTimeout(debounceTimeoutRef.current);
       }
 
-      supabaseClient.removeChannel(accountsChannel);
+      supabaseClient.removeChannel(tradingChannel);
     };
   }, []);
 
