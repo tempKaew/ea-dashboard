@@ -318,7 +318,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-stone-950 text-white">
       {loading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-stone-900 bg-opacity-75">
+        <div className="absolute inset-0 z-50 flex h-dvh items-center justify-center bg-stone-900 bg-opacity-75">
           <div className="wave-container">
             <div className="wave-bar bg-slate-200"></div>
             <div className="wave-bar bg-slate-200"></div>
@@ -332,7 +332,7 @@ export default function Dashboard() {
 
       {/* Header */}
       <div className="border-b border-stone-800 bg-stone-950">
-        <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 sm:py-4 lg:px-8">
+        <div className="mx-auto max-w-7xl px-2 py-2 sm:px-6 sm:py-4 lg:px-8">
           <div className="flex flex-col items-start justify-between sm:flex-row sm:items-center">
             <div className="flex w-full items-center gap-4 sm:w-fit">
               {/* Hamburger Menu */}
@@ -423,7 +423,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto max-w-7xl px-2 py-4 sm:px-6 sm:py-8 lg:px-8">
         {/* Overall Stats */}
         <div className="mb-4 grid grid-cols-2 gap-2 sm:mb-8 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
           <StatCard
@@ -488,7 +488,7 @@ export default function Dashboard() {
         {/* Accounts List */}
         <div className="overflow-hidden rounded-lg border border-stone-800 bg-stone-900 shadow">
           <div className="border-b border-stone-700 px-3 py-2 sm:px-6">
-            <div className="flex flex-col items-center justify-between sm:flex-row">
+            <div className="flex flex-col items-start justify-between sm:flex-row sm:items-center">
               <h3 className="mb-2 text-sm font-bold text-white sm:mb-0 sm:text-lg">
                 Trading Accounts {getDateRange(dateFilter).label ?? ""}
                 {showInactiveOnly && (
@@ -502,7 +502,7 @@ export default function Dashboard() {
                   </span>
                 )}
               </h3>
-              <div className="flex items-center gap-2 sm:gap-4">
+              <div className="flex w-full items-center gap-2 sm:w-fit sm:gap-4">
                 {/* Run At Filter */}
                 <select
                   value={selectedRunAt || ""}
