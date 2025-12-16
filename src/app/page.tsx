@@ -303,12 +303,12 @@ export default function Dashboard() {
         latestUpdate,
       );
 
-      // Reload data immediately when history is updated/inserted
+      // Reload data immediately when updated is updated/inserted
       if (
-        table === "history" &&
+        table === "updated" &&
         (eventType === "INSERT" || eventType === "UPDATE")
       ) {
-        console.log("📊 History changed, reloading dashboard data...");
+        console.log("📊 Updated changed, reloading dashboard data...");
         loadData();
       }
     }
