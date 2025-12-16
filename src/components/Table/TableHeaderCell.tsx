@@ -18,7 +18,7 @@ export function TableHeaderCell({
   className = "",
 }: TableHeaderCellProps) {
   const baseClasses =
-    "px-6 py-2 text-left text-[10px] font-bold text-gray-300 uppercase";
+    "px-2 sm:px-4 py-2 text-left text-[10px] font-bold text-gray-300 uppercase";
   const sortableClasses = sortable ? "cursor-pointer hover:bg-stone-700" : "";
 
   return (

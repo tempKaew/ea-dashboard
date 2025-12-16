@@ -41,6 +41,9 @@ export default function Dashboard() {
   const [showInactiveOnly, setShowInactiveOnly] = useState(false);
   const { latestUpdate, isConnected } = useRealtimeTrading();
 
+  const titleSite = process.env.NEXT_PUBLIC_APP_NAME ?? "EA Dashboard";
+  const [currentTime, setCurrentTime] = useState<string | null>(null);
+
   // Helper function to safely convert database strings to numbers
   const toNumber = (value: string | number): number => {
     return typeof value === "string" ? parseFloat(value) || 0 : value;
@@ -86,7 +89,7 @@ export default function Dashboard() {
           start: week.toISOString().split("T")[0],
           end: today.toISOString().split("T")[0],
           label: `${week.toLocaleDateString(
-            "th-TH"
+            "th-TH",
           )} - ${today.toLocaleDateString("th-TH")}`,
         };
       case "last30days":
@@ -96,7 +99,7 @@ export default function Dashboard() {
           start: month.toISOString().split("T")[0],
           end: today.toISOString().split("T")[0],
           label: `${month.toLocaleDateString(
-            "th-TH"
+            "th-TH",
           )} - ${today.toLocaleDateString("th-TH")}`,
         };
     }
@@ -156,7 +159,7 @@ export default function Dashboard() {
         return 0;
       });
     },
-    [sortField, sortDirection, accountsHistory]
+    [sortField, sortDirection, accountsHistory],
   );
 
   const filterAccounts = useCallback(
@@ -165,7 +168,7 @@ export default function Dashboard() {
 
       if (selectedRunAt !== null) {
         filtered = filtered.filter(
-          (account) => account.run_at_id === selectedRunAt
+          (account) => account.run_at_id === selectedRunAt,
         );
       }
 
@@ -180,7 +183,7 @@ export default function Dashboard() {
 
       return sortAccounts(filtered);
     },
-    [selectedRunAt, showInactiveOnly, sortAccounts, accountsHistory]
+    [selectedRunAt, showInactiveOnly, sortAccounts, accountsHistory],
   );
 
   useEffect(() => {
@@ -222,7 +225,7 @@ export default function Dashboard() {
       // Fetch accounts with history in one request
       const dateRange = getDateRange(dateFilter);
       const accountsRes = await fetch(
-        `/api/trading/accounts-with-history?start_date=${dateRange.start}&end_date=${dateRange.end}`
+        `/api/trading/accounts-with-history?start_date=${dateRange.start}&end_date=${dateRange.end}`,
       );
       const accountsWithHistoryData = await accountsRes.json();
 
@@ -239,7 +242,7 @@ export default function Dashboard() {
           run_at_title: item.run_at_title,
           updated_at: item.updated_at,
           history_count: item.history_count,
-        })
+        }),
       );
 
       const historyMap: { [key: string]: History } = {};
@@ -257,8 +260,16 @@ export default function Dashboard() {
       const statsData = await statsRes.json();
       setStats(statsData);
 
+      setCurrentTime(
+        new Date().toLocaleTimeString("th-TH", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }),
+      );
+
       console.log(
-        `✅ Loaded ${accountsData.length} accounts with history in 2 requests`
+        `✅ Loaded ${accountsData.length} accounts with history in 2 requests`,
       );
     } catch (error) {
       console.error("Error loading data:", error);
@@ -289,7 +300,7 @@ export default function Dashboard() {
       const { table, eventType } = latestUpdate;
       console.log(
         `🔄 Real-time update received: ${eventType} on ${table} table, refreshing data...`,
-        latestUpdate
+        latestUpdate,
       );
 
       // Reload data immediately when history is updated/inserted
@@ -299,40 +310,39 @@ export default function Dashboard() {
       ) {
         console.log("📊 History changed, reloading dashboard data...");
         loadData();
-      } else if (
-        table === "accounts" &&
-        (eventType === "INSERT" || eventType === "UPDATE")
-      ) {
-        console.log("👤 Account changed, reloading dashboard data...");
-        loadData();
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [latestUpdate]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-stone-900 flex items-center justify-center">
-        <div className="text-xl text-white">Loading...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-stone-950 text-white">
+      {loading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-stone-900 bg-opacity-75">
+          <div className="wave-container">
+            <div className="wave-bar bg-slate-200"></div>
+            <div className="wave-bar bg-slate-200"></div>
+            <div className="wave-bar bg-slate-200"></div>
+            <div className="wave-bar bg-slate-200"></div>
+            <div className="wave-bar bg-slate-200"></div>
+          </div>
+          <span className="sr-only">Loading...</span>
+        </div>
+      )}
+
       {/* Header */}
-      <div className="bg-stone-950 border-b border-stone-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
+      <div className="border-b border-stone-800 bg-stone-950">
+        <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 sm:py-4 lg:px-8">
+          <div className="flex flex-col items-start justify-between sm:flex-row sm:items-center">
+            <div className="flex w-full items-center gap-4 sm:w-fit">
               {/* Hamburger Menu */}
               <div className="relative">
                 <button
                   onClick={() => setShowMenu(!showMenu)}
-                  className="p-2 rounded-md hover:bg-stone-800 transition-colors"
+                  className="rounded-md p-2 transition-colors hover:bg-stone-800"
                 >
                   <svg
-                    className="w-6 h-6 text-gray-300"
+                    className="h-6 w-6 text-gray-300"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -348,28 +358,28 @@ export default function Dashboard() {
 
                 {/* Dropdown Menu */}
                 {showMenu && (
-                  <div className="absolute top-full left-0 mt-2 w-48 bg-stone-800 rounded-md shadow-lg border border-stone-700 z-50">
+                  <div className="absolute left-0 top-full z-50 mt-2 w-48 rounded-md border border-stone-700 bg-stone-800 shadow-lg">
                     <div className="py-1">
                       <button
                         onClick={() => {
                           router.push("/run-at");
                           setShowMenu(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-stone-700 hover:text-white transition-colors"
+                        className="w-full px-4 py-2 text-left text-sm text-gray-300 transition-colors hover:bg-stone-700 hover:text-white"
                       >
                         🔧 Manage Run At
                       </button>
-                      <div className="border-t border-stone-600 my-1"></div>
+                      <div className="my-1 border-t border-stone-600"></div>
                       <button
                         onClick={() => {
                           window.location.reload();
                           setShowMenu(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-stone-700 hover:text-white transition-colors"
+                        className="w-full px-4 py-2 text-left text-sm text-gray-300 transition-colors hover:bg-stone-700 hover:text-white"
                       >
                         🔄 Refresh Data
                       </button>
-                      <div className="border-t border-stone-600 my-1"></div>
+                      <div className="my-1 border-t border-stone-600"></div>
                       <div className="px-4 py-2 text-xs text-gray-400">
                         <div>Total: {accounts.length} accounts</div>
                         <div className="text-red-400">
@@ -390,87 +400,97 @@ export default function Dashboard() {
                 )}
               </div>
 
-              <h1 className="text-3xl font-bold text-white">
-                Infinity MiningX Dashboard
+              <h1 className="flex-1 text-2xl font-bold text-white sm:text-3xl">
+                {titleSite}
               </h1>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex w-full items-center justify-center gap-4 text-xs sm:w-fit sm:text-sm">
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-3 h-3 rounded-full ${
-                    isConnected ? "bg-green-500 animate-pulse" : "bg-red-500"
+                  className={`h-2 w-2 rounded-full sm:h-3 sm:w-3 ${
+                    isConnected ? "animate-pulse bg-green-500" : "bg-red-500"
                   }`}
                 />
-                <span className="text-sm font-medium text-gray-300">
+                <span className="font-medium text-gray-300">
                   {isConnected ? "Live" : "Disconnected"}
                 </span>
               </div>
-              <div className="text-sm text-gray-400">
-                Last update: {formatTime(new Date().toISOString())}
+              <div className="text-gray-400">
+                Last update: {currentTime ?? "-"}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-8 lg:px-8">
         {/* Overall Stats */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-            <StatCard
-              title="Total Accounts"
-              value={stats.total_accounts}
-              icon="users"
-            />
-            <StatCard
-              title="Total Balance"
-              value={formatCurrency(stats.total_balance)}
-              icon="wallet"
-            />
-            <StatCard
-              title="Total Equity"
-              value={formatCurrency(stats.total_equity)}
-              color={
-                toNumber(stats.total_equity) >= toNumber(stats.total_balance)
-                  ? "green"
-                  : "red"
-              }
-              colorBorder={
-                toNumber(stats.total_equity) >= toNumber(stats.total_balance)
-                  ? "green"
-                  : "red"
-              }
-              icon="chart"
-            />
-            <StatCard
-              title="Current P/L"
-              value={formatCurrency(stats.total_open_profit)}
-              previousValue={formatCurrency(stats.before_total_open_profit)}
-              color={toNumber(stats.total_open_profit) >= 0 ? "green" : "red"}
-              colorBorder={
-                toNumber(stats.total_open_profit) >= 0 ? "green" : "red"
-              }
-              icon="trending"
-            />
-            <StatCard
-              title="Today P/L"
-              value={formatCurrency(stats.total_closed_profit)}
-              previousValue={formatCurrency(stats.before_total_closed_profit)}
-              color={toNumber(stats.total_closed_profit) >= 0 ? "green" : "red"}
-              colorBorder={
-                toNumber(stats.total_closed_profit) >= 0 ? "green" : "red"
-              }
-              icon="target"
-            />
-          </div>
-        )}
+        <div className="mb-4 grid grid-cols-2 gap-2 sm:mb-8 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
+          <StatCard
+            title="Total Accounts"
+            value={stats?.total_accounts ?? 0}
+            icon="users"
+          />
+          <StatCard
+            title="Total Balance"
+            value={formatCurrency(stats?.total_balance ?? 0)}
+            icon="wallet"
+          />
+          <StatCard
+            title="Total Equity"
+            value={formatCurrency(stats?.total_equity ?? 0)}
+            color={
+              stats &&
+              toNumber(stats?.total_equity) >= toNumber(stats?.total_balance)
+                ? "green"
+                : "red"
+            }
+            colorBorder={
+              stats &&
+              toNumber(stats?.total_equity) >= toNumber(stats?.total_balance)
+                ? "green"
+                : "red"
+            }
+            icon="chart"
+          />
+          <StatCard
+            title="Current P/L"
+            value={formatCurrency(stats?.total_open_profit ?? 0)}
+            previousValue={formatCurrency(stats?.before_total_open_profit ?? 0)}
+            color={
+              stats && toNumber(stats?.total_open_profit) >= 0 ? "green" : "red"
+            }
+            colorBorder={
+              stats && toNumber(stats?.total_open_profit) >= 0 ? "green" : "red"
+            }
+            icon="trending"
+          />
+          <StatCard
+            title="Today P/L"
+            value={formatCurrency(stats?.total_closed_profit ?? 0)}
+            previousValue={formatCurrency(
+              stats?.before_total_closed_profit ?? 0,
+            )}
+            color={
+              stats && toNumber(stats?.total_closed_profit) >= 0
+                ? "green"
+                : "red"
+            }
+            colorBorder={
+              stats && toNumber(stats?.total_closed_profit) >= 0
+                ? "green"
+                : "red"
+            }
+            icon="target"
+          />
+        </div>
 
         {/* Accounts List */}
-        <div className="bg-stone-900 rounded-lg shadow overflow-hidden border border-stone-800">
-          <div className="px-6 py-2 border-b border-stone-700">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-white">
-                Trading Accounts {getDateRange(dateFilter).label}
+        <div className="overflow-hidden rounded-lg border border-stone-800 bg-stone-900 shadow">
+          <div className="border-b border-stone-700 px-3 py-2 sm:px-6">
+            <div className="flex flex-col items-center justify-between sm:flex-row">
+              <h3 className="mb-2 text-sm font-bold text-white sm:mb-0 sm:text-lg">
+                Trading Accounts {getDateRange(dateFilter).label ?? ""}
                 {showInactiveOnly && (
                   <span className="ml-2 text-sm text-red-400">
                     (Inactive Only: {filteredAccounts.length})
@@ -478,20 +498,20 @@ export default function Dashboard() {
                 )}
                 {!showInactiveOnly && (
                   <span className="ml-2 text-sm text-gray-400">
-                    ({filteredAccounts.length} accounts)
+                    ({filteredAccounts.length} acc)
                   </span>
                 )}
               </h3>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4">
                 {/* Run At Filter */}
                 <select
                   value={selectedRunAt || ""}
                   onChange={(e) =>
                     setSelectedRunAt(
-                      e.target.value ? Number(e.target.value) : null
+                      e.target.value ? Number(e.target.value) : null,
                     )
                   }
-                  className="bg-stone-800 text-white border border-stone-600 rounded px-3 py-1 text-sm"
+                  className="rounded border border-stone-600 bg-stone-800 px-2 py-1 text-sm text-white"
                 >
                   <option value="">All Run At</option>
                   {runAtList.map((runAt) => (
@@ -502,64 +522,31 @@ export default function Dashboard() {
                 </select>
 
                 {/* Date Filter */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setDateFilter("today")}
-                    className={`px-3 py-1 text-sm rounded ${
-                      dateFilter === "today"
-                        ? "bg-blue-600 text-white"
-                        : "bg-stone-700 text-gray-300 hover:bg-stone-600"
-                    }`}
-                  >
-                    Today
-                  </button>
-                  <button
-                    onClick={() => setDateFilter("yesterday")}
-                    className={`px-3 py-1 text-sm rounded ${
-                      dateFilter === "yesterday"
-                        ? "bg-blue-600 text-white"
-                        : "bg-stone-700 text-gray-300 hover:bg-stone-600"
-                    }`}
-                  >
-                    Yesterday
-                  </button>
-                  <button
-                    onClick={() => setDateFilter("last7days")}
-                    className={`px-3 py-1 text-sm rounded ${
-                      dateFilter === "last7days"
-                        ? "bg-blue-600 text-white"
-                        : "bg-stone-700 text-gray-300 hover:bg-stone-600"
-                    }`}
-                  >
-                    Last 7 Days
-                  </button>
-                  <button
-                    onClick={() => setDateFilter("last30days")}
-                    className={`px-3 py-1 text-sm rounded ${
-                      dateFilter === "last30days"
-                        ? "bg-blue-600 text-white"
-                        : "bg-stone-700 text-gray-300 hover:bg-stone-600"
-                    }`}
-                  >
-                    Last 30 Days
-                  </button>
-                </div>
+                <select
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value as DateFilter)}
+                  className="rounded border border-stone-600 bg-stone-800 px-2 py-1 text-sm text-white"
+                >
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="last7days">Last 7 Days</option>
+                  <option value="last30days">Last 30 Days</option>
+                </select>
 
-                {/* Inactive Filter Toggle */}
                 <button
                   onClick={() => setShowInactiveOnly(!showInactiveOnly)}
-                  className={`px-3 py-1 text-sm rounded flex items-center gap-2 ${
+                  className={`flex items-center gap-2 rounded px-2 py-1 text-sm ${
                     showInactiveOnly
                       ? "bg-red-600 text-white"
                       : "bg-stone-700 text-gray-300 hover:bg-stone-600"
                   }`}
                 >
                   <div
-                    className={`w-2 h-2 rounded-full ${
+                    className={`h-2 w-2 rounded-full ${
                       showInactiveOnly ? "bg-white" : "bg-red-500"
                     }`}
                   />
-                  Show Inactive
+                  Inactive
                 </button>
               </div>
             </div>
@@ -664,7 +651,7 @@ export default function Dashboard() {
                           <span className="text-green-400">
                             {history.current_order_buy_count}
                           </span>
-                          <span className="text-gray-500 mx-1">|</span>
+                          <span className="mx-1 text-gray-500">|</span>
                           <span className="text-red-400">
                             {history.current_order_sell_count}
                           </span>
@@ -689,7 +676,7 @@ export default function Dashboard() {
                       {history ? (
                         <div className="flex items-center gap-2">
                           <div
-                            className={`w-2 h-2 rounded-full ${
+                            className={`h-2 w-2 rounded-full ${
                               isFresh ? "bg-green-500" : "bg-red-500"
                             }`}
                           />
@@ -699,7 +686,7 @@ export default function Dashboard() {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-gray-500" />
+                          <div className="h-2 w-2 rounded-full bg-gray-500" />
                           <span className="text-gray-500">-</span>
                         </div>
                       )}

@@ -11,7 +11,7 @@ interface StatCardProps {
 
 export default function StatCard({
   title,
-  value,
+  value = "",
   previousValue,
   color = "white",
   colorBorder = "default",
@@ -34,16 +34,16 @@ export default function StatCard({
 
   return (
     <div
-      className={`rounded-lg shadow px-4 py-2 border ${colorBorders[colorBorder]}`}
+      className={`rounded-lg border px-4 py-2 shadow ${colorBorders[colorBorder]}`}
     >
-      <div className="flex items-center justify-between mb-1">
+      <div className="mb-0 flex items-center justify-between sm:mb-1">
         <h3 className="text-xs text-gray-400">{title}</h3>
-        {IconComponent && <IconComponent className="w-6 h-6 text-gray-400" />}
+        {IconComponent && <IconComponent className="h-6 w-6 text-gray-400" />}
       </div>
       <p className={`text-lg font-bold ${colorClasses[color]}`}>
         <span>{value}</span>
         {previousValue && (
-          <span className="text-xs font-bold text-stone-500 pl-2">{value}</span>
+          <span className="pl-2 text-xs font-bold text-stone-500">{value}</span>
         )}
       </p>
     </div>
