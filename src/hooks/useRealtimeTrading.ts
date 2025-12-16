@@ -12,7 +12,7 @@ interface RealtimePayload {
 
 export function useRealtimeTrading() {
   const [latestUpdate, setLatestUpdate] = useState<RealtimePayload | null>(
-    null
+    null,
   );
   const [isConnected, setIsConnected] = useState(false);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -42,20 +42,20 @@ export function useRealtimeTrading() {
         clearTimeout(debounceTimeoutRef.current);
       }
 
-      // For history table, reload immediately (no debounce)
+      // For updated table, reload immediately (no debounce)
       const debounceTime = 5000;
 
       debounceTimeoutRef.current = setTimeout(() => {
         console.log(
           `⏰ Applying ${updateData.table} update (${updateData.eventType}):`,
-          pendingUpdateRef.current
+          pendingUpdateRef.current,
         );
         setLatestUpdate(pendingUpdateRef.current);
         pendingUpdateRef.current = null;
       }, debounceTime);
     };
 
-    // Subscribe to changes on history tables
+    // Subscribe to changes on updated tables
     const tradingChannel = supabaseClient
       .channel("trading-changes")
       .on(
@@ -63,24 +63,24 @@ export function useRealtimeTrading() {
         {
           event: "*",
           schema: "public",
-          table: "history",
+          table: "updated",
         },
         (payload) => {
-          console.log("📊 History update received:", payload);
+          console.log("📊 updated update received:", payload);
           handleUpdate({
             eventType: payload.eventType,
             new: payload.new as Record<string, unknown>,
             old: payload.old as Record<string, unknown>,
-            table: "history",
+            table: "updated",
           });
-        }
+        },
       )
       .subscribe((status) => {
         console.log("Supabase Realtime status:", status);
         setIsConnected(status === "SUBSCRIBED");
 
         if (status === "SUBSCRIBED") {
-          console.log("✅ Successfully subscribed to history tables");
+          console.log("✅ Successfully subscribed to updated tables");
         } else if (status === "CHANNEL_ERROR") {
           console.error("❌ Error subscribing to Supabase Realtime");
         }
