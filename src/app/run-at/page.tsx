@@ -8,11 +8,16 @@ export default function RunAtManagement() {
   const router = useRouter();
   const [runAtList, setRunAtList] = useState<RunAt[]>([]);
   const [accountCounts, setAccountCounts] = useState<{ [key: number]: number }>(
-    {}
+    {},
   );
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   const [newTitle, setNewTitle] = useState("");
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState("");
@@ -32,7 +37,7 @@ export default function RunAtManagement() {
       const counts: { [key: number]: number } = {};
       for (const runAt of runAtData) {
         const accountRes = await fetch(
-          "/api/run-at/accounts-count?run_at_id=" + runAt.id
+          "/api/run-at/accounts-count?run_at_id=" + runAt.id,
         );
         const countData = await accountRes.json();
         counts[runAt.id] = countData.count || 0;
@@ -142,7 +147,7 @@ export default function RunAtManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-stone-950 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-stone-950">
         <div className="text-xl text-white">Loading...</div>
       </div>
     );
@@ -151,9 +156,9 @@ export default function RunAtManagement() {
   return (
     <div className="min-h-screen bg-stone-950 text-white">
       {/* Header */}
-      <div className="bg-stone-950 border-b border-stone-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
+      <div className="border-b border-stone-800 bg-stone-950">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push("/")}
@@ -169,30 +174,30 @@ export default function RunAtManagement() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Add New Run At */}
-        <div className="bg-stone-900 rounded-lg shadow overflow-hidden border border-stone-800 mb-6">
-          <div className="px-6 py-4 border-b border-stone-700">
+        <div className="mb-6 overflow-hidden rounded-lg border border-stone-800 bg-stone-900 shadow">
+          <div className="border-b border-stone-700 px-6 py-4">
             <h3 className="text-lg font-bold text-white">Add New Run At</h3>
           </div>
           <div className="p-6">
-            <div className="flex gap-4 items-end">
+            <div className="flex items-end gap-4">
               <div className="flex-1">
-                <label className="block text-sm text-gray-400 mb-2">
+                <label className="mb-2 block text-sm text-gray-400">
                   Title
                 </label>
                 <input
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-blue-400 focus:outline-none"
+                  className="w-full rounded border border-stone-600 bg-stone-700 px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
                   placeholder="Enter run at title"
                 />
               </div>
               <button
                 onClick={handleAdd}
                 disabled={!newTitle.trim() || saving}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving ? "Adding..." : "Add"}
               </button>
@@ -201,60 +206,62 @@ export default function RunAtManagement() {
         </div>
 
         {/* Run At List */}
-        <div className="bg-stone-900 rounded-lg shadow overflow-hidden border border-stone-800">
-          <div className="px-6 py-4 border-b border-stone-700">
+        <div className="overflow-hidden rounded-lg border border-stone-800 bg-stone-900 shadow">
+          <div className="border-b border-stone-700 px-6 py-4">
             <h3 className="text-lg font-bold text-white">Run At List</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-stone-700">
               <thead className="bg-stone-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-300">
                     ID
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-300">
                     Title
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-300">
                     Accounts Count
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-300">
                     Created At
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-300">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-stone-900 divide-y divide-stone-800">
+              <tbody className="divide-y divide-stone-800 bg-stone-900">
                 {runAtList.map((runAt) => (
                   <tr key={runAt.id} className="hover:bg-stone-800">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-300">
                       {runAt.id}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="whitespace-nowrap px-6 py-4 text-sm">
                       {editingId === runAt.id ? (
                         <input
                           type="text"
                           value={editTitle}
                           onChange={(e) => setEditTitle(e.target.value)}
-                          className="w-full px-2 py-1 bg-stone-700 text-white text-sm rounded border border-stone-600 focus:border-blue-400 focus:outline-none"
+                          className="w-full rounded border border-stone-600 bg-stone-700 px-2 py-1 text-sm text-white focus:border-blue-400 focus:outline-none"
                         />
                       ) : (
-                        <span className="text-white font-medium">
+                        <span className="font-medium text-white">
                           {runAt.title}
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <td className="whitespace-nowrap px-6 py-4 text-sm">
+                      <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
                         {accountCounts[runAt.id] || 0} accounts
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                      {new Date(runAt.created_at).toLocaleDateString("th-TH")}
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-300">
+                      {isClient
+                        ? new Date(runAt.created_at).toLocaleDateString("th-TH")
+                        : "-"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="whitespace-nowrap px-6 py-4 text-sm">
                       {editingId === runAt.id ? (
                         <div className="flex gap-2">
                           <button
@@ -298,41 +305,41 @@ export default function RunAtManagement() {
 
       {/* Delete Confirmation Modal */}
       {deleteId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-stone-900 rounded-lg p-6 max-w-md w-full mx-4 border border-stone-700">
-            <h3 className="text-lg font-bold text-white mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="mx-4 w-full max-w-md rounded-lg border border-stone-700 bg-stone-900 p-6">
+            <h3 className="mb-4 text-lg font-bold text-white">
               Confirm Delete
             </h3>
-            <p className="text-gray-300 mb-4">
+            <p className="mb-4 text-gray-300">
               Are you sure you want to delete this run at? This action cannot be
               undone.
             </p>
             <div className="mb-4">
-              <label className="block text-sm text-gray-400 mb-2">
+              <label className="mb-2 block text-sm text-gray-400">
                 Type &quot;confirm&quot; to proceed:
               </label>
               <input
                 type="text"
                 value={deleteConfirm}
                 onChange={(e) => setDeleteConfirm(e.target.value)}
-                className="w-full px-3 py-2 bg-stone-700 text-white rounded border border-stone-600 focus:border-blue-400 focus:outline-none"
+                className="w-full rounded border border-stone-600 bg-stone-700 px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
                 placeholder="confirm"
               />
             </div>
-            <div className="flex gap-3 justify-end">
+            <div className="flex justify-end gap-3">
               <button
                 onClick={() => {
                   setDeleteId(null);
                   setDeleteConfirm("");
                 }}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                className="rounded bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleteConfirm !== "confirm" || saving}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving ? "Deleting..." : "Delete"}
               </button>

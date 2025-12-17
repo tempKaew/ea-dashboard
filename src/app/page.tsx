@@ -43,6 +43,11 @@ export default function Dashboard() {
 
   const titleSite = process.env.NEXT_PUBLIC_APP_NAME ?? "EA Dashboard";
   const [currentTime, setCurrentTime] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Helper function to safely convert database strings to numbers
   const toNumber = (value: string | number): number => {
@@ -681,7 +686,7 @@ export default function Dashboard() {
                             }`}
                           />
                           <span className="text-gray-300">
-                            {formatTime(history.updated_at)}
+                            {isClient ? formatTime(history.updated_at) : "-"}
                           </span>
                         </div>
                       ) : (
