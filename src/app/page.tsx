@@ -32,7 +32,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<TradeStats | null>(null);
   const [runAtList, setRunAtList] = useState<RunAt[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortField, setSortField] = useState<SortField>("account");
+  const [sortField, setSortField] = useState<SortField>("name");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [selectedRunAt, setSelectedRunAt] = useState<number | null>(null);
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
