@@ -30,6 +30,7 @@ export default function AccountDetail() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
+
   const isUpdateFresh = (updatedAt: string) => {
     const updateTime = new Date(updatedAt);
     const now = new Date();
@@ -37,7 +38,6 @@ export default function AccountDetail() {
     return diffMinutes <= 5;
   };
 
-  // Helper function to safely convert database strings to numbers
   const toNumber = (value: string | number): number => {
     return typeof value === "string" ? parseFloat(value) || 0 : value;
   };
@@ -65,7 +65,6 @@ export default function AccountDetail() {
     });
   };
 
-  // Load history with pagination
   const loadHistory = useCallback(
     async (page = currentPage, limit = itemsPerPage) => {
       try {
@@ -74,7 +73,6 @@ export default function AccountDetail() {
         let url = `/api/trading/history?acc_number=${params.id}`;
 
         if (limit !== -1) {
-          // -1 means "all"
           const offset = (page - 1) * limit;
           url += `&limit=${limit}&offset=${offset}`;
         }
@@ -84,12 +82,9 @@ export default function AccountDetail() {
 
         if (Array.isArray(historyData)) {
           setHistory(historyData);
-          // For "all" option, set total to actual length
           if (limit === -1) {
             setTotalRecords(historyData.length);
           } else {
-            // For paginated results, we need to get total count
-            // For now, estimate based on returned data
             setTotalRecords(
               historyData.length === limit
                 ? page * limit + 1
@@ -106,17 +101,14 @@ export default function AccountDetail() {
     [params.id, currentPage, itemsPerPage],
   );
 
-  // Load account data
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
 
-      // Fetch run_at list
       const runAtRes = await fetch("/api/run-at");
       const runAtData = await runAtRes.json();
       setRunAtList(runAtData);
 
-      // Fetch specific account
       const accountRes = await fetch(
         `/api/trading/accounts?acc_number=${params.id}`,
       );
@@ -131,7 +123,6 @@ export default function AccountDetail() {
           run_at_id: account.run_at_id || null,
         });
 
-        // Load initial history
         await loadHistory();
       }
     } catch (error) {
@@ -145,7 +136,6 @@ export default function AccountDetail() {
     loadData();
   }, [loadData]);
 
-  // Load history when page or items per page changes
   useEffect(() => {
     if (account) {
       loadHistory();
@@ -159,7 +149,6 @@ export default function AccountDetail() {
     }
   };
 
-  // Save account changes
   const handleSave = async () => {
     if (!account) return;
 
@@ -180,7 +169,6 @@ export default function AccountDetail() {
         const result = await response.json();
         setAccount(result.account);
         setIsEditing(false);
-        console.log("Account updated successfully");
       } else {
         console.error("Failed to update account");
       }
@@ -191,7 +179,6 @@ export default function AccountDetail() {
     }
   };
 
-  // Cancel editing
   const handleCancel = () => {
     if (account) {
       setEditForm({
@@ -203,7 +190,6 @@ export default function AccountDetail() {
     setIsEditing(false);
   };
 
-  // Delete account
   const handleDelete = async () => {
     if (!account || deleteConfirm !== "confirm") return;
 
@@ -217,7 +203,6 @@ export default function AccountDetail() {
       );
 
       if (response.ok) {
-        // Redirect to dashboard after successful deletion
         router.push("/");
       } else {
         console.error("Failed to delete account");
@@ -233,20 +218,26 @@ export default function AccountDetail() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-stone-900">
-        <div className="text-xl text-white">Loading...</div>
+      <div className="relative flex min-h-screen items-center justify-center bg-canvas">
+        <div className="wave-container">
+          <div className="wave-bar" />
+          <div className="wave-bar" />
+          <div className="wave-bar" />
+          <div className="wave-bar" />
+          <div className="wave-bar" />
+        </div>
       </div>
     );
   }
 
   if (!account) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-stone-900">
-        <div className="text-center">
-          <div className="mb-4 text-xl text-white">Account not found</div>
+      <div className="relative flex min-h-screen items-center justify-center bg-canvas">
+        <div className="pastel-card rounded-3xl p-8 text-center">
+          <div className="mb-4 text-xl font-bold text-ink">Account not found</div>
           <button
             onClick={() => router.push("/")}
-            className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            className="btn-primary px-5 py-2.5 text-sm font-bold"
           >
             Back to Dashboard
           </button>
@@ -258,103 +249,130 @@ export default function AccountDetail() {
   const todayHistory = history.find(
     (h) => h.date === new Date().toISOString().split("T")[0],
   );
+  const isFresh = isUpdateFresh(account.updated_at);
+  const equityPositive =
+    toNumber(account.equity) >= toNumber(account.balance);
+  const floatingPl = toNumber(account.equity) - toNumber(account.balance);
 
   return (
-    <div className="min-h-screen bg-stone-950 text-white">
-      {/* Header */}
-      <div className="border-b border-stone-800 bg-stone-950">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => router.push("/")}
-                className="text-gray-400 hover:text-white"
-              >
-                ← Back
-              </button>
-              <h1 className="text-3xl font-bold text-white">
-                Account #{account.acc_number}
-              </h1>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleManualRefresh}
-                  className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
-                >
-                  Refresh
-                </button>
-                <button
-                  onClick={() => setShowDeleteModal(true)}
-                  className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
-                >
-                  Delete Account
-                </button>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`h-3 w-3 rounded-full ${
-                    isUpdateFresh(account.updated_at)
-                      ? "bg-green-500"
-                      : "bg-red-500"
-                  }`}
-                />
-                <span className="text-sm font-medium text-gray-300">
-                  {isUpdateFresh(account.updated_at)
-                    ? "Updated recently"
-                    : "Stale data"}
-                </span>
-              </div>
-              <div className="text-sm text-gray-400">
-                Last update: {isClient ? formatTime(account.updated_at) : "-"}
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="relative min-h-screen bg-canvas text-ink">
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute -top-28 left-1/4 h-[380px] w-[520px] rounded-full bg-pink-200/40 blur-[110px]" />
+        <div className="absolute top-1/4 -right-20 h-[420px] w-[480px] rounded-full bg-emerald-100/50 blur-[120px]" />
+        <div className="absolute bottom-10 left-10 h-[360px] w-[550px] rounded-full bg-sky-200/40 blur-[120px]" />
+        <div className="grid-pattern absolute inset-0 opacity-40" />
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Account Overview */}
-        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-4">
-          <div className="rounded-lg border border-stone-800 p-6 shadow">
-            <h3 className="mb-2 text-sm text-gray-400">Balance</h3>
-            <p className="text-2xl font-bold text-blue-400">
+      <div className="relative z-10 mx-auto max-w-dashboard px-3.5 py-4 sm:px-6 sm:py-5 lg:px-8">
+        <header className="pastel-card mb-5 flex flex-col gap-4 rounded-3xl px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => router.push("/")}
+              className="rounded-2xl border border-stroke px-3 py-2 text-sm font-semibold text-ink-muted transition-all hover:bg-slate-50 hover:text-ink"
+            >
+              ← Back
+            </button>
+            <h1 className="text-xl font-bold tracking-tight text-ink sm:text-2xl">
+              Account #{account.acc_number}
+            </h1>
+            <button
+              onClick={handleManualRefresh}
+              className="rounded-2xl border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-700 hover:bg-teal-100"
+            >
+              Refresh
+            </button>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="rounded-2xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100"
+            >
+              Delete
+            </button>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <div
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 font-medium shadow-sm ${
+                isFresh
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-rose-200 bg-rose-50 text-rose-700"
+              }`}
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  isFresh ? "bg-emerald-500" : "bg-rose-500"
+                }`}
+              />
+              <span className="text-[11px] font-bold tracking-wide uppercase">
+                {isFresh ? "Updated recently" : "Stale data"}
+              </span>
+            </div>
+            <div className="font-mono text-[11px] text-ink-muted">
+              Last update: {isClient ? formatTime(account.updated_at) : "-"}
+            </div>
+          </div>
+        </header>
+
+        <div className="mb-5 grid grid-cols-1 gap-3.5 md:grid-cols-2 lg:grid-cols-4">
+          <div className="pastel-card rounded-3xl border-blue-200/80 bg-gradient-to-b from-[#F0F7FF] to-white p-5">
+            <h3 className="mb-2 font-mono text-[11px] font-bold tracking-wider text-blue-700 uppercase">
+              Balance
+            </h3>
+            <p className="font-tabular font-mono text-2xl font-extrabold text-blue-900">
               {formatCurrency(account.balance)}
             </p>
           </div>
-          <div className="rounded-lg border border-stone-800 p-6 shadow">
-            <h3 className="mb-2 text-sm text-gray-400">Equity</h3>
+          <div
+            className={`pastel-card rounded-3xl p-5 ${
+              equityPositive
+                ? "border-emerald-200 bg-gradient-to-b from-[#ECFDF5] to-white"
+                : "border-amber-200 bg-gradient-to-b from-[#FEFCE8] to-white"
+            }`}
+          >
+            <h3
+              className={`mb-2 font-mono text-[11px] font-bold tracking-wider uppercase ${
+                equityPositive ? "text-emerald-800" : "text-amber-700"
+              }`}
+            >
+              Equity
+            </h3>
             <p
-              className={`text-2xl font-bold ${
-                toNumber(account.equity) >= toNumber(account.balance)
-                  ? "text-green-400"
-                  : "text-red-400"
+              className={`font-tabular font-mono text-2xl font-extrabold ${
+                equityPositive ? "text-emerald-600" : "text-amber-700"
               }`}
             >
               {formatCurrency(account.equity)}
             </p>
           </div>
-          <div className="rounded-lg border border-stone-800 p-6 shadow">
-            <h3 className="mb-2 text-sm text-gray-400">Floating P/L</h3>
-            <p
-              className={`text-2xl font-bold ${
-                toNumber(account.equity) - toNumber(account.balance) >= 0
-                  ? "text-green-400"
-                  : "text-red-400"
+          <div
+            className={`pastel-card rounded-3xl p-5 ${
+              floatingPl >= 0
+                ? "border-emerald-200 bg-gradient-to-b from-[#F3FBF7] to-white"
+                : "border-pink-200 bg-gradient-to-b from-[#FFF1F2] to-white"
+            }`}
+          >
+            <h3
+              className={`mb-2 font-mono text-[11px] font-bold tracking-wider uppercase ${
+                floatingPl >= 0 ? "text-emerald-800" : "text-rose-700"
               }`}
             >
-              {formatCurrency(
-                toNumber(account.equity) - toNumber(account.balance),
-              )}
+              Floating P/L
+            </h3>
+            <p
+              className={`font-tabular font-mono text-2xl font-extrabold ${
+                floatingPl >= 0 ? "text-emerald-600" : "text-rose-600"
+              }`}
+            >
+              {formatCurrency(floatingPl)}
             </p>
           </div>
-          <div className="rounded-lg border border-stone-800 p-6 shadow">
+          <div className="pastel-card rounded-3xl border-purple-200 bg-gradient-to-b from-purple-50 to-white p-5">
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="text-sm text-gray-400">Account Info</h3>
+              <h3 className="font-mono text-[11px] font-bold tracking-wider text-purple-700 uppercase">
+                Account Info
+              </h3>
               {!isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="text-sm text-blue-400 hover:text-blue-300"
+                  className="text-xs font-bold text-blue-600 hover:text-blue-700"
                 >
                   Edit
                 </button>
@@ -363,7 +381,7 @@ export default function AccountDetail() {
             {isEditing ? (
               <div className="space-y-3">
                 <div>
-                  <label className="mb-1 block text-xs text-gray-400">
+                  <label className="mb-1 block text-[10px] font-semibold text-ink-muted uppercase">
                     Name
                   </label>
                   <input
@@ -372,12 +390,12 @@ export default function AccountDetail() {
                     onChange={(e) =>
                       setEditForm({ ...editForm, name: e.target.value })
                     }
-                    className="w-full rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white focus:border-blue-400 focus:outline-none"
+                    className="w-full rounded-xl border border-stroke bg-canvas px-2.5 py-1.5 text-sm text-ink focus:border-primary-container focus:ring-2 focus:ring-[rgba(137,194,217,0.2)] focus:outline-none"
                     placeholder="Account name"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-gray-400">
+                  <label className="mb-1 block text-[10px] font-semibold text-ink-muted uppercase">
                     Email
                   </label>
                   <input
@@ -386,12 +404,12 @@ export default function AccountDetail() {
                     onChange={(e) =>
                       setEditForm({ ...editForm, email: e.target.value })
                     }
-                    className="w-full rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white focus:border-blue-400 focus:outline-none"
+                    className="w-full rounded-xl border border-stroke bg-canvas px-2.5 py-1.5 text-sm text-ink focus:border-primary-container focus:ring-2 focus:ring-[rgba(137,194,217,0.2)] focus:outline-none"
                     placeholder="Email address"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-gray-400">
+                  <label className="mb-1 block text-[10px] font-semibold text-ink-muted uppercase">
                     Run At
                   </label>
                   <select
@@ -404,7 +422,7 @@ export default function AccountDetail() {
                           : null,
                       })
                     }
-                    className="w-full rounded border border-gray-600 bg-gray-700 px-2 py-1 text-sm text-white focus:border-blue-400 focus:outline-none"
+                    className="w-full rounded-xl border border-stroke bg-canvas px-2.5 py-1.5 text-sm text-ink focus:border-primary-container focus:ring-2 focus:ring-[rgba(137,194,217,0.2)] focus:outline-none"
                   >
                     <option value="">Select Run At</option>
                     {runAtList.map((runAt) => (
@@ -414,17 +432,17 @@ export default function AccountDetail() {
                     ))}
                   </select>
                 </div>
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-2 pt-1">
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
                   >
                     {saving ? "Saving..." : "Save"}
                   </button>
                   <button
                     onClick={handleCancel}
-                    className="rounded bg-gray-600 px-3 py-1 text-xs text-white hover:bg-gray-700"
+                    className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 hover:bg-slate-200"
                   >
                     Cancel
                   </button>
@@ -432,13 +450,13 @@ export default function AccountDetail() {
               </div>
             ) : (
               <div className="space-y-1">
-                <p className="text-lg text-white">
+                <p className="text-base font-bold text-ink">
                   {account.name || "Unnamed Account"}
                 </p>
-                <p className="text-sm text-gray-300">
+                <p className="text-sm text-ink-muted">
                   {account.email || "No email set"}
                 </p>
-                <p className="text-sm text-blue-300">
+                <p className="text-sm font-semibold text-blue-600">
                   {account.run_at_title || "No run at set"}
                 </p>
               </div>
@@ -446,49 +464,48 @@ export default function AccountDetail() {
           </div>
         </div>
 
-        {/* Today's Trading */}
         {todayHistory && (
-          <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* Current Open Positions */}
-            <div className="rounded-lg bg-gray-800 p-6 shadow">
-              <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
-                <span>📊</span> Current Open Positions
+          <div className="mb-5 grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+            <div className="pastel-card rounded-3xl p-5">
+              <h3 className="mb-4 flex items-center gap-2 text-base font-bold text-ink">
+                <span className="h-2 w-2 rounded-full bg-blue-400" />
+                Current Open Positions
               </h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">Total Trades</span>
-                  <span className="font-semibold text-white">
+                  <span className="text-sm text-ink-muted">Total Trades</span>
+                  <span className="font-tabular font-semibold text-ink">
                     {todayHistory.current_total_trade}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">Profit/Loss</span>
+                  <span className="text-sm text-ink-muted">Profit/Loss</span>
                   <span
-                    className={`font-semibold ${
+                    className={`font-tabular font-semibold ${
                       toNumber(todayHistory.current_profit) >= 0
-                        ? "text-green-400"
-                        : "text-red-400"
+                        ? "text-emerald-600"
+                        : "text-rose-600"
                     }`}
                   >
                     {formatCurrency(todayHistory.current_profit)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">Total Lot</span>
-                  <span className="font-semibold text-white">
+                  <span className="text-sm text-ink-muted">Total Lot</span>
+                  <span className="font-tabular font-semibold text-ink">
                     {toNumber(todayHistory.current_lot).toFixed(2)}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-4 border-t border-gray-700 pt-3">
+                <div className="grid grid-cols-2 gap-4 border-t border-stroke pt-3">
                   <div>
-                    <div className="text-sm text-gray-400">Buy Orders</div>
-                    <div className="text-xl font-bold text-green-400">
+                    <div className="text-sm text-ink-muted">Buy Orders</div>
+                    <div className="font-tabular text-xl font-bold text-emerald-600">
                       {todayHistory.current_order_buy_count}
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm text-gray-400">Sell Orders</div>
-                    <div className="text-xl font-bold text-red-400">
+                    <div className="text-sm text-ink-muted">Sell Orders</div>
+                    <div className="font-tabular text-xl font-bold text-rose-500">
                       {todayHistory.current_order_sell_count}
                     </div>
                   </div>
@@ -496,52 +513,52 @@ export default function AccountDetail() {
               </div>
             </div>
 
-            {/* Today's Closed Trades */}
-            <div className="rounded-lg bg-gray-800 p-6 shadow">
-              <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-white">
-                <span>📜</span> Today&apos;s Closed Trades
+            <div className="pastel-card rounded-3xl p-5">
+              <h3 className="mb-4 flex items-center gap-2 text-base font-bold text-ink">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                Today&apos;s Closed Trades
               </h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">Total Trades</span>
-                  <span className="font-semibold text-white">
+                  <span className="text-sm text-ink-muted">Total Trades</span>
+                  <span className="font-tabular font-semibold text-ink">
                     {todayHistory.history_total_trade}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">Profit/Loss</span>
+                  <span className="text-sm text-ink-muted">Profit/Loss</span>
                   <span
-                    className={`font-semibold ${
+                    className={`font-tabular font-semibold ${
                       toNumber(todayHistory.history_profit) >= 0
-                        ? "text-green-400"
-                        : "text-red-400"
+                        ? "text-emerald-600"
+                        : "text-rose-600"
                     }`}
                   >
                     {formatCurrency(todayHistory.history_profit)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-400">Total Lot</span>
-                  <span className="font-semibold text-white">
+                  <span className="text-sm text-ink-muted">Total Lot</span>
+                  <span className="font-tabular font-semibold text-ink">
                     {toNumber(todayHistory.history_lot).toFixed(2)}
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-2 border-t border-gray-700 pt-3">
+                <div className="grid grid-cols-3 gap-2 border-t border-stroke pt-3">
                   <div>
-                    <div className="text-xs text-gray-400">Win</div>
-                    <div className="text-lg font-bold text-green-400">
+                    <div className="text-xs text-ink-muted">Win</div>
+                    <div className="font-tabular text-lg font-bold text-emerald-600">
                       {todayHistory.history_win}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-400">Loss</div>
-                    <div className="text-lg font-bold text-red-400">
+                    <div className="text-xs text-ink-muted">Loss</div>
+                    <div className="font-tabular text-lg font-bold text-rose-500">
                       {todayHistory.history_loss}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-400">Win Rate</div>
-                    <div className="text-lg font-bold text-blue-400">
+                    <div className="text-xs text-ink-muted">Win Rate</div>
+                    <div className="font-tabular text-lg font-bold text-blue-600">
                       {toNumber(todayHistory.history_total_trade) > 0
                         ? (
                             (toNumber(todayHistory.history_win) /
@@ -558,15 +575,14 @@ export default function AccountDetail() {
           </div>
         )}
 
-        {/* History Table */}
-        <div className="overflow-hidden rounded-lg border border-stone-800 bg-stone-900 shadow">
-          <div className="flex items-center justify-between border-b border-stone-700 px-6 py-4">
-            <h3 className="text-lg font-bold text-white">Trading History</h3>
-
-            {/* Items per page selector */}
-            <div className="flex items-center gap-4">
+        <div className="pastel-card overflow-hidden rounded-3xl">
+          <div className="flex flex-col justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-purple-50/50 via-pink-50/30 to-blue-50/40 px-5 py-4 sm:flex-row sm:items-center">
+            <h3 className="text-base font-bold text-ink">Trading History</h3>
+            <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-400">Show:</span>
+                <span className="text-xs font-semibold text-ink-muted">
+                  Show:
+                </span>
                 <select
                   value={itemsPerPage}
                   onChange={(e) => {
@@ -574,129 +590,108 @@ export default function AccountDetail() {
                     setItemsPerPage(newLimit);
                     setCurrentPage(1);
                   }}
-                  className="rounded border border-gray-600 bg-stone-700 px-2 py-1 text-sm text-white focus:border-blue-400 focus:outline-none"
+                  className="cursor-pointer appearance-none rounded-2xl border border-blue-200 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-300 focus:outline-none"
                 >
                   <option value={50}>50</option>
                   <option value={100}>100</option>
                   <option value={-1}>All</option>
                 </select>
-                <span className="text-sm text-gray-400">records</span>
+                <span className="text-xs text-ink-muted">records</span>
               </div>
-
-              {/* Page info */}
               {itemsPerPage !== -1 && (
-                <div className="text-sm text-gray-400">
+                <div className="font-mono text-xs text-ink-muted">
                   Page {currentPage} • {history.length} records
                   {historyLoading && <span className="ml-2">Loading...</span>}
                 </div>
               )}
             </div>
           </div>
+
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-stone-700">
-              <thead className="bg-stone-800">
+            <table className="w-full border-collapse text-left text-xs">
+              <thead className="border-b border-slate-200/80 bg-slate-50/80 font-mono text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-300">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-300">
-                    Balance
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-300">
-                    Equity
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-300">
-                    Open P/L
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-300">
-                    Closed P/L
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-300">
-                    Win/Loss
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase text-gray-300">
-                    Total Trades
-                  </th>
+                  <th className="px-4 py-3.5">Date</th>
+                  <th className="px-4 py-3.5 text-right">Balance</th>
+                  <th className="px-4 py-3.5 text-right">Equity</th>
+                  <th className="px-4 py-3.5 text-right">Open P/L</th>
+                  <th className="px-4 py-3.5 text-right">Closed P/L</th>
+                  <th className="px-4 py-3.5 text-center">Win/Loss</th>
+                  <th className="px-4 py-3.5">Total Trades</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-800 bg-stone-900">
+              <tbody className="divide-y divide-slate-100 font-mono text-slate-600">
                 {historyLoading ? (
                   <tr>
                     <td
                       colSpan={7}
-                      className="px-6 py-8 text-center text-gray-400"
+                      className="px-4 py-8 text-center text-ink-muted"
                     >
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-blue-400"></div>
-                        Loading history...
-                      </div>
+                      Loading history...
                     </td>
                   </tr>
                 ) : history.length === 0 ? (
                   <tr>
                     <td
                       colSpan={7}
-                      className="px-6 py-8 text-center text-gray-400"
+                      className="px-4 py-8 text-center text-ink-muted"
                     >
                       No trading history found
                     </td>
                   </tr>
                 ) : (
                   history.map((record) => (
-                    <tr key={record.id} className="hover:bg-stone-800">
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-white">
+                    <tr
+                      key={record.id}
+                      className="transition-colors hover:bg-[rgba(255,229,180,0.25)]"
+                    >
+                      <td className="whitespace-nowrap px-4 py-4 font-sans font-bold text-ink">
                         {formatDate(record.date)}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-300">
+                      <td className="font-tabular whitespace-nowrap px-4 py-4 text-right font-bold text-ink">
                         {formatCurrency(record.balance)}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold">
-                        <span
-                          className={
-                            toNumber(record.equity) >= toNumber(record.balance)
-                              ? "text-green-400"
-                              : "text-red-400"
-                          }
-                        >
-                          {formatCurrency(record.equity)}
-                        </span>
+                      <td
+                        className={`font-tabular whitespace-nowrap px-4 py-4 text-right font-bold ${
+                          toNumber(record.equity) >= toNumber(record.balance)
+                            ? "text-emerald-600"
+                            : "text-amber-700"
+                        }`}
+                      >
+                        {formatCurrency(record.equity)}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold">
-                        <span
-                          className={
-                            toNumber(record.current_profit) >= 0
-                              ? "text-green-400"
-                              : "text-red-400"
-                          }
-                        >
-                          {formatCurrency(record.current_profit)}
-                        </span>
+                      <td
+                        className={`font-tabular whitespace-nowrap px-4 py-4 text-right font-bold ${
+                          toNumber(record.current_profit) >= 0
+                            ? "text-emerald-600"
+                            : "text-rose-600"
+                        }`}
+                      >
+                        {formatCurrency(record.current_profit)}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold">
-                        <span
-                          className={
-                            toNumber(record.history_profit) >= 0
-                              ? "text-green-400"
-                              : "text-red-400"
-                          }
-                        >
-                          {formatCurrency(record.history_profit)}
-                        </span>
+                      <td
+                        className={`font-tabular whitespace-nowrap px-4 py-4 text-right font-bold ${
+                          toNumber(record.history_profit) >= 0
+                            ? "text-emerald-600"
+                            : "text-rose-600"
+                        }`}
+                      >
+                        {formatCurrency(record.history_profit)}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm">
-                        <span className="font-semibold text-green-400">
+                      <td className="whitespace-nowrap px-4 py-4 text-center">
+                        <span className="font-tabular font-bold text-emerald-600">
                           {record.history_win}
                         </span>
-                        <span className="mx-1 text-gray-500">/</span>
-                        <span className="font-semibold text-red-400">
+                        <span className="mx-1 text-slate-300">/</span>
+                        <span className="font-tabular font-bold text-rose-500">
                           {record.history_loss}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-300">
-                        <div className="text-xs">
+                      <td className="whitespace-nowrap px-4 py-4 text-slate-500">
+                        <div className="text-[11px]">
                           Open: {record.current_total_trade}
                         </div>
-                        <div className="text-xs">
+                        <div className="text-[11px]">
                           Closed: {record.history_total_trade}
                         </div>
                       </td>
@@ -707,27 +702,23 @@ export default function AccountDetail() {
             </table>
           </div>
 
-          {/* Pagination Controls */}
           {itemsPerPage !== -1 && (
-            <div className="flex items-center justify-between border-t border-gray-700 px-6 py-4">
-              <div className="text-sm text-gray-400">
+            <div className="flex flex-col justify-between gap-3 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5 sm:flex-row sm:items-center">
+              <div className="font-mono text-xs text-slate-500">
                 Showing{" "}
                 {Math.min((currentPage - 1) * itemsPerPage + 1, totalRecords)}{" "}
                 to {Math.min(currentPage * itemsPerPage, totalRecords)} of{" "}
                 {totalRecords} records
               </div>
-
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1 || historyLoading}
-                  className="rounded bg-stone-700 px-3 py-1 text-sm text-white hover:bg-stone-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-full border border-stroke bg-white px-3 py-1 text-xs font-bold text-ink hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Previous
                 </button>
-
                 <div className="flex items-center gap-1">
-                  {/* Page numbers */}
                   {Array.from(
                     {
                       length: Math.min(
@@ -738,18 +729,16 @@ export default function AccountDetail() {
                     (_, i) => {
                       const pageNum = Math.max(1, currentPage - 2) + i;
                       const maxPage = Math.ceil(totalRecords / itemsPerPage);
-
                       if (pageNum > maxPage) return null;
-
                       return (
                         <button
                           key={pageNum}
                           onClick={() => setCurrentPage(pageNum)}
                           disabled={historyLoading}
-                          className={`rounded px-3 py-1 text-sm ${
+                          className={`rounded-full px-3 py-1 text-xs font-bold ${
                             pageNum === currentPage
-                              ? "bg-stone-600 text-white"
-                              : "bg-stone-700 text-stone-300 hover:bg-stone-600"
+                              ? "bg-primary-container text-white shadow-pastel-sky"
+                              : "border border-stroke bg-white text-ink-muted hover:bg-slate-50"
                           } disabled:opacity-50`}
                         >
                           {pageNum}
@@ -758,11 +747,10 @@ export default function AccountDetail() {
                     },
                   )}
                 </div>
-
                 <button
                   onClick={() => setCurrentPage(currentPage + 1)}
                   disabled={history.length < itemsPerPage || historyLoading}
-                  className="rounded bg-stone-700 px-3 py-1 text-sm text-white hover:bg-stone-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-full border border-stroke bg-white px-3 py-1 text-xs font-bold text-ink hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Next
                 </button>
@@ -772,27 +760,24 @@ export default function AccountDetail() {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="mx-4 w-full max-w-md rounded-lg border border-stone-700 bg-stone-900 p-6">
-            <h3 className="mb-4 text-lg font-bold text-white">
-              Delete Account
-            </h3>
-            <p className="mb-4 text-gray-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(250,247,242,0.7)] backdrop-blur-[12px]">
+          <div className="mx-4 w-full max-w-md rounded-3xl border border-stroke bg-white p-6 shadow-pastel-md">
+            <h3 className="mb-2 text-lg font-bold text-ink">Delete Account</h3>
+            <p className="mb-4 text-sm text-ink-muted">
               Are you sure you want to delete account #{account?.acc_number}?
               This will permanently delete the account and all its trading
               history. This action cannot be undone.
             </p>
-            <div className="mb-4">
-              <label className="mb-2 block text-sm text-gray-400">
-                Type &quot;confirm&quot; to proceed:
+            <div className="mb-5">
+              <label className="mb-2 block text-xs font-semibold text-ink-muted uppercase">
+                Type &quot;confirm&quot; to proceed
               </label>
               <input
                 type="text"
                 value={deleteConfirm}
                 onChange={(e) => setDeleteConfirm(e.target.value)}
-                className="w-full rounded border border-stone-600 bg-stone-700 px-3 py-2 text-white focus:border-blue-400 focus:outline-none"
+                className="w-full rounded-2xl border border-stroke bg-canvas px-4 py-2.5 text-sm text-ink focus:border-primary-container focus:ring-2 focus:ring-[rgba(137,194,217,0.2)] focus:outline-none"
                 placeholder="confirm"
               />
             </div>
@@ -802,14 +787,14 @@ export default function AccountDetail() {
                   setShowDeleteModal(false);
                   setDeleteConfirm("");
                 }}
-                className="rounded bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
+                className="rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
                 disabled={deleteConfirm !== "confirm" || deleting}
-                className="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-full bg-rose-500 px-4 py-2 text-sm font-bold text-white hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {deleting ? "Deleting..." : "Delete Account"}
               </button>

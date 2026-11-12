@@ -13,7 +13,9 @@ export function TableRow({
   className = "",
   hoverable = true,
 }: TableRowProps) {
-  const baseClasses = hoverable ? "hover:bg-stone-800 transition-colors" : "";
+  const baseClasses = hoverable
+    ? "group transition-colors hover:bg-[rgba(255,229,180,0.25)]"
+    : "";
   const clickableClasses = onClick ? "cursor-pointer" : "";
 
   return (

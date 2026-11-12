@@ -320,155 +320,267 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [latestUpdate]);
 
+  const inactiveCount = accounts.filter((account) => {
+    const history = accountsHistory[account.acc_number];
+    if (!history) return true;
+    return !isUpdateFresh(history.updated_at);
+  }).length;
+
+  const equityPositive =
+    stats &&
+    toNumber(stats.total_equity) >= toNumber(stats.total_balance);
+  const openProfitPositive =
+    stats && toNumber(stats.total_open_profit) >= 0;
+  const closedProfitPositive =
+    stats && toNumber(stats.total_closed_profit) >= 0;
+
   return (
-    <div className="min-h-screen bg-stone-950 text-white">
+    <div className="relative min-h-screen bg-canvas text-ink antialiased">
+      {/* Ambient pastel backdrop */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute -top-28 left-1/4 h-[380px] w-[520px] rounded-full bg-pink-200/40 blur-[110px]" />
+        <div className="absolute top-1/4 -right-20 h-[420px] w-[480px] rounded-full bg-emerald-100/50 blur-[120px]" />
+        <div className="absolute bottom-10 left-10 h-[360px] w-[550px] rounded-full bg-sky-200/40 blur-[120px]" />
+        <div className="absolute right-1/4 bottom-0 h-[320px] w-[420px] rounded-full bg-amber-100/50 blur-[100px]" />
+        <div className="grid-pattern absolute inset-0 opacity-40" />
+      </div>
+
       {loading && (
-        <div className="absolute inset-0 z-50 flex h-dvh items-center justify-center bg-stone-900 bg-opacity-75">
+        <div className="absolute inset-0 z-50 flex h-dvh items-center justify-center bg-[rgba(250,247,242,0.7)] backdrop-blur-[12px]">
           <div className="wave-container">
-            <div className="wave-bar bg-slate-200"></div>
-            <div className="wave-bar bg-slate-200"></div>
-            <div className="wave-bar bg-slate-200"></div>
-            <div className="wave-bar bg-slate-200"></div>
-            <div className="wave-bar bg-slate-200"></div>
+            <div className="wave-bar" />
+            <div className="wave-bar" />
+            <div className="wave-bar" />
+            <div className="wave-bar" />
+            <div className="wave-bar" />
           </div>
           <span className="sr-only">Loading...</span>
         </div>
       )}
 
-      {/* Header */}
-      <div className="border-b border-stone-800 bg-stone-950">
-        <div className="mx-auto max-w-7xl px-2 py-2 sm:px-6 sm:py-4 lg:px-8">
-          <div className="flex flex-col items-start justify-between sm:flex-row sm:items-center">
-            <div className="flex w-full items-center gap-4 sm:w-fit">
-              {/* Hamburger Menu */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowMenu(!showMenu)}
-                  className="rounded-md p-2 transition-colors hover:bg-stone-800"
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-dashboard flex-col px-3.5 py-4 sm:px-6 sm:py-5 lg:px-8">
+        {/* Header */}
+        <header className="pastel-card relative z-40 mb-5 flex w-full flex-wrap items-center justify-between gap-4 rounded-3xl px-4 py-3.5 sm:px-6">
+          <div className="flex items-center gap-4 sm:gap-6">
+            <div className="relative z-50">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                aria-label="Toggle Navigation"
+                className="rounded-2xl border border-stroke p-2 text-ink-muted transition-all hover:bg-slate-100/80 hover:text-ink active:scale-95"
+                type="button"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <svg
-                    className="h-6 w-6 text-gray-300"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16M4 18h16"
-                    />
-                  </svg>
-                </button>
+                  <path
+                    d="M4 6h16M4 12h16M4 18h16"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2.5"
+                  />
+                </svg>
+              </button>
 
-                {/* Dropdown Menu */}
-                {showMenu && (
-                  <div className="absolute left-0 top-full z-50 mt-2 w-48 rounded-md border border-stone-700 bg-stone-800 shadow-lg">
-                    <div className="py-1">
-                      <button
-                        onClick={() => {
-                          router.push("/run-at");
-                          setShowMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-300 transition-colors hover:bg-stone-700 hover:text-white"
-                      >
-                        🔧 Manage Run At
-                      </button>
-                      <div className="my-1 border-t border-stone-600"></div>
-                      <button
-                        onClick={() => {
-                          window.location.reload();
-                          setShowMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-300 transition-colors hover:bg-stone-700 hover:text-white"
-                      >
-                        🔄 Refresh Data
-                      </button>
-                      <div className="my-1 border-t border-stone-600"></div>
-                      <div className="px-4 py-2 text-xs text-gray-400">
-                        <div>Total: {accounts.length} accounts</div>
-                        <div className="text-red-400">
-                          Inactive:{" "}
-                          {
-                            accounts.filter((account) => {
-                              const history =
-                                accountsHistory[account.acc_number];
-                              if (!history) return true;
-                              return !isUpdateFresh(history.updated_at);
-                            }).length
-                          }{" "}
-                          accounts
-                        </div>
+              {showMenu && (
+                <div className="absolute left-0 top-full z-[60] mt-2 w-56 overflow-hidden rounded-2xl border border-stroke bg-white shadow-pastel-md">
+                  <div className="py-1.5">
+                    <button
+                      onClick={() => {
+                        router.push("/run-at");
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-4 py-2.5 text-left text-sm font-medium text-ink transition-colors hover:bg-pastel-purple"
+                    >
+                      Manage Run At
+                    </button>
+                    <div className="my-1 border-t border-stroke" />
+                    <button
+                      onClick={() => {
+                        window.location.reload();
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-4 py-2.5 text-left text-sm font-medium text-ink transition-colors hover:bg-pastel-blue"
+                    >
+                      Refresh Data
+                    </button>
+                    <div className="my-1 border-t border-stroke" />
+                    <div className="px-4 py-2.5 text-xs text-ink-muted">
+                      <div>Total: {accounts.length} accounts</div>
+                      <div className="mt-0.5 font-semibold text-rose-600">
+                        Inactive: {inactiveCount} accounts
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
-
-              <h1 className="flex-1 text-2xl font-bold text-white sm:text-3xl">
-                {titleSite}
-              </h1>
+                </div>
+              )}
             </div>
-            <div className="flex w-full items-center justify-center gap-4 text-xs sm:w-fit sm:text-sm">
-              <div className="flex items-center gap-2">
-                <div
-                  className={`h-2 w-2 rounded-full sm:h-3 sm:w-3 ${
-                    isConnected ? "animate-pulse bg-green-500" : "bg-red-500"
-                  }`}
-                />
-                <span className="font-medium text-gray-300">
-                  {isConnected ? "Live" : "Disconnected"}
+
+            <div className="group flex cursor-default items-center gap-3">
+              <div className="relative h-9 w-9 rounded-2xl bg-gradient-to-tr from-pink-300 via-purple-300 to-teal-200 p-[1.5px] shadow-sm">
+                <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-white">
+                  <svg
+                    className="h-4 w-4 text-teal-600"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-white" />
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-[17px] font-bold tracking-tight text-ink">
+                  {titleSite}
+                </span>
+                <span className="ml-1 rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-purple-600 uppercase">
+                  QUANT
                 </span>
               </div>
-              <div className="text-gray-400">
-                Last update: {currentTime ?? "-"}
+            </div>
+
+            <div className="hidden items-center gap-3 border-l border-stroke pl-4 text-xs md:flex">
+              <div
+                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 font-medium shadow-sm ${
+                  isConnected
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                    : "border-rose-200 bg-rose-50 text-rose-700"
+                }`}
+              >
+                <span className="relative flex h-2 w-2">
+                  {isConnected && (
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  )}
+                  <span
+                    className={`relative inline-flex h-2 w-2 rounded-full ${
+                      isConnected ? "bg-emerald-500" : "bg-rose-500"
+                    }`}
+                  />
+                </span>
+                <span className="text-[11px] font-bold tracking-wide uppercase">
+                  {isConnected ? "Online Live" : "Disconnected"}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-full border border-stroke bg-slate-100/70 px-2.5 py-1 font-mono text-[11px] text-ink-muted">
+                <span>Last sync:</span>
+                <span className="font-tabular font-semibold text-ink">
+                  {currentTime ?? "-"}
+                </span>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="mx-auto max-w-7xl px-2 py-4 sm:px-6 sm:py-8 lg:px-8">
-        {/* Overall Stats */}
-        <div className="mb-4 grid grid-cols-2 gap-2 sm:mb-8 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <button
+              onClick={() => loadData()}
+              aria-label="Refresh"
+              className="rounded-2xl border border-teal-200 bg-teal-50 p-2 text-teal-700 shadow-sm transition-all hover:bg-teal-100 active:scale-95"
+              type="button"
+              title="Sync live updates"
+            >
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                />
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        {/* KPI Cards */}
+        <section
+          aria-label="Key Performance Indicators"
+          className="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-5"
+        >
           <StatCard
             title="Total Accounts"
             value={stats?.total_accounts ?? 0}
             icon="users"
+            tone="sky"
+            footer={
+              <div className="flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+                <span className="font-semibold text-blue-700">
+                  {accounts.length - inactiveCount} active
+                </span>
+                <span>· {inactiveCount} inactive</span>
+              </div>
+            }
           />
           <StatCard
             title="Total Balance"
             value={formatCurrency(stats?.total_balance ?? 0)}
             icon="wallet"
+            tone="mint"
+            footer={
+              <div className="flex items-center justify-between">
+                <span>Allocated</span>
+                <span className="rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 font-bold text-emerald-700">
+                  100%
+                </span>
+              </div>
+            }
           />
           <StatCard
             title="Total Equity"
             value={formatCurrency(stats?.total_equity ?? 0)}
-            color={
-              stats &&
-              toNumber(stats?.total_equity) >= toNumber(stats?.total_balance)
-                ? "green"
-                : "red"
-            }
-            colorBorder={
-              stats &&
-              toNumber(stats?.total_equity) >= toNumber(stats?.total_balance)
-                ? "green"
-                : "red"
-            }
             icon="chart"
+            tone={equityPositive ? "matcha" : "butter"}
+            footer={
+              <div className="flex items-center justify-between">
+                <span>vs Balance</span>
+                <span
+                  className={`rounded-full border px-2 py-0.5 font-bold ${
+                    equityPositive
+                      ? "border-emerald-200 bg-emerald-100 text-emerald-800"
+                      : "border-amber-200 bg-amber-100 text-amber-800"
+                  }`}
+                >
+                  {equityPositive ? "Healthy" : "Drawdown"}
+                </span>
+              </div>
+            }
           />
           <StatCard
             title="Current P/L"
             value={formatCurrency(stats?.total_open_profit ?? 0)}
             previousValue={formatCurrency(stats?.before_total_open_profit ?? 0)}
-            color={
-              stats && toNumber(stats?.total_open_profit) >= 0 ? "green" : "red"
-            }
-            colorBorder={
-              stats && toNumber(stats?.total_open_profit) >= 0 ? "green" : "red"
-            }
             icon="trending"
+            tone={openProfitPositive ? "matcha" : "rose"}
+            footer={
+              <div
+                className={`flex items-center gap-1.5 ${
+                  openProfitPositive ? "text-emerald-700" : "text-rose-600"
+                }`}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    openProfitPositive ? "bg-emerald-400" : "bg-rose-400"
+                  }`}
+                />
+                <span className="font-medium">
+                  {openProfitPositive
+                    ? "Unrealized float gain"
+                    : "Unrealized float drawdown"}
+                </span>
+              </div>
+            }
           />
           <StatCard
             title="Today P/L"
@@ -476,39 +588,44 @@ export default function Dashboard() {
             previousValue={formatCurrency(
               stats?.before_total_closed_profit ?? 0,
             )}
-            color={
-              stats && toNumber(stats?.total_closed_profit) >= 0
-                ? "green"
-                : "red"
-            }
-            colorBorder={
-              stats && toNumber(stats?.total_closed_profit) >= 0
-                ? "green"
-                : "red"
-            }
             icon="target"
+            tone={closedProfitPositive ? "matcha" : "rose"}
+            footer={
+              <div className="flex items-center justify-between text-emerald-700">
+                <span>Realized today</span>
+                <span className="rounded-full border border-emerald-200 bg-emerald-100/80 px-2 py-0.5 font-bold text-emerald-800">
+                  Closed P/L
+                </span>
+              </div>
+            }
           />
-        </div>
+        </section>
 
-        {/* Accounts List */}
-        <div className="overflow-hidden rounded-lg border border-stone-800 bg-stone-900 shadow">
-          <div className="border-b border-stone-700 px-3 py-2 sm:px-6">
-            <div className="flex flex-col items-start justify-between sm:flex-row sm:items-center">
-              <h3 className="mb-2 text-sm font-bold text-white sm:mb-0 sm:text-lg">
-                Trading Accounts {getDateRange(dateFilter).label ?? ""}
-                {showInactiveOnly && (
-                  <span className="ml-2 text-sm text-red-400">
-                    (Inactive Only: {filteredAccounts.length})
-                  </span>
-                )}
-                {!showInactiveOnly && (
-                  <span className="ml-2 text-sm text-gray-400">
-                    ({filteredAccounts.length} acc)
-                  </span>
-                )}
-              </h3>
-              <div className="flex w-full items-center gap-2 sm:w-fit sm:gap-4">
-                {/* Run At Filter */}
+        {/* Accounts table */}
+        <main className="pastel-card mb-5 w-full overflow-hidden rounded-3xl">
+          <div className="flex flex-col justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-purple-50/50 via-pink-50/30 to-blue-50/40 p-4 sm:p-5 lg:flex-row lg:items-center">
+            <div className="flex items-center gap-3">
+              <div className="h-6 w-2.5 rounded-full bg-gradient-to-b from-pink-400 via-purple-400 to-teal-400" />
+              <h2 className="flex flex-wrap items-center gap-2.5 text-base font-bold tracking-tight text-ink sm:text-lg">
+                <span>
+                  Trading Accounts {getDateRange(dateFilter).label ?? ""}
+                </span>
+                <span
+                  className={`rounded-full border bg-white px-3 py-0.5 font-mono text-xs font-bold shadow-sm ${
+                    showInactiveOnly
+                      ? "border-rose-200 text-rose-700"
+                      : "border-purple-200 text-purple-700"
+                  }`}
+                >
+                  {showInactiveOnly
+                    ? `Inactive: ${filteredAccounts.length}`
+                    : `${filteredAccounts.length} acc`}
+                </span>
+              </h2>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+              <div className="relative">
                 <select
                   value={selectedRunAt || ""}
                   onChange={(e) =>
@@ -516,7 +633,8 @@ export default function Dashboard() {
                       e.target.value ? Number(e.target.value) : null,
                     )
                   }
-                  className="rounded border border-stone-600 bg-stone-800 px-2 py-1 text-sm text-white"
+                  aria-label="Run filter"
+                  className="cursor-pointer appearance-none rounded-2xl border border-blue-200 bg-white px-3.5 py-2 pr-8 text-xs font-semibold text-blue-700 shadow-sm transition-all hover:bg-slate-50 focus:border-blue-400 focus:ring-2 focus:ring-blue-300 focus:outline-none"
                 >
                   <option value="">All Run At</option>
                   {runAtList.map((runAt) => (
@@ -525,37 +643,75 @@ export default function Dashboard() {
                     </option>
                   ))}
                 </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-blue-500">
+                  <svg
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M19 9l-7 7-7-7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2.5"
+                    />
+                  </svg>
+                </div>
+              </div>
 
-                {/* Date Filter */}
+              <div className="relative">
                 <select
                   value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value as DateFilter)}
-                  className="rounded border border-stone-600 bg-stone-800 px-2 py-1 text-sm text-white"
+                  onChange={(e) =>
+                    setDateFilter(e.target.value as DateFilter)
+                  }
+                  aria-label="Date preset"
+                  className="cursor-pointer appearance-none rounded-2xl border border-emerald-200 bg-white px-3.5 py-2 pr-8 text-xs font-semibold text-emerald-700 shadow-sm transition-all hover:bg-slate-50 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300 focus:outline-none"
                 >
                   <option value="today">Today</option>
                   <option value="yesterday">Yesterday</option>
                   <option value="last7days">Last 7 Days</option>
                   <option value="last30days">Last 30 Days</option>
                 </select>
-
-                <button
-                  onClick={() => setShowInactiveOnly(!showInactiveOnly)}
-                  className={`flex items-center gap-2 rounded px-2 py-1 text-sm ${
-                    showInactiveOnly
-                      ? "bg-red-600 text-white"
-                      : "bg-stone-700 text-gray-300 hover:bg-stone-600"
-                  }`}
-                >
-                  <div
-                    className={`h-2 w-2 rounded-full ${
-                      showInactiveOnly ? "bg-white" : "bg-red-500"
-                    }`}
-                  />
-                  Inactive
-                </button>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-emerald-500">
+                  <svg
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M19 9l-7 7-7-7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2.5"
+                    />
+                  </svg>
+                </div>
               </div>
+
+              <button
+                onClick={() => setShowInactiveOnly(!showInactiveOnly)}
+                className={`inline-flex items-center gap-1.5 rounded-2xl border px-3.5 py-2 text-xs font-bold shadow-sm transition-all active:scale-95 ${
+                  showInactiveOnly
+                    ? "border-rose-300 bg-rose-100 text-rose-700"
+                    : "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                }`}
+                type="button"
+              >
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    showInactiveOnly
+                      ? "animate-pulse bg-rose-500"
+                      : "bg-rose-400"
+                  }`}
+                />
+                Inactive
+              </button>
             </div>
           </div>
+
           <Table>
             <TableHeader>
               <TableHeaderCell
@@ -580,6 +736,7 @@ export default function Dashboard() {
                 active={sortField === "balance"}
                 direction={sortDirection}
                 onClick={() => handleSort("balance")}
+                align="right"
               >
                 Balance
               </TableHeaderCell>
@@ -588,14 +745,17 @@ export default function Dashboard() {
                 active={sortField === "equity"}
                 direction={sortDirection}
                 onClick={() => handleSort("equity")}
+                align="right"
               >
                 Equity
               </TableHeaderCell>
-              <TableHeaderCell>Current P&L</TableHeaderCell>
-              <TableHeaderCell>Open</TableHeaderCell>
-              <TableHeaderCell>Buy|Sell</TableHeaderCell>
-              <TableHeaderCell>Today P&L</TableHeaderCell>
-              <TableHeaderCell>Closed</TableHeaderCell>
+              <TableHeaderCell align="right">Current P&L</TableHeaderCell>
+              <TableHeaderCell align="center">Open</TableHeaderCell>
+              <TableHeaderCell align="center" className="min-w-[140px]">
+                Buy | Sell
+              </TableHeaderCell>
+              <TableHeaderCell align="right">Today P&L</TableHeaderCell>
+              <TableHeaderCell align="center">Closed</TableHeaderCell>
               <TableHeaderCell
                 sortable
                 active={sortField === "last_update"}
@@ -611,6 +771,17 @@ export default function Dashboard() {
                 const isFresh = history
                   ? isUpdateFresh(history.updated_at)
                   : false;
+                const buyCount = history
+                  ? toNumber(history.current_order_buy_count)
+                  : 0;
+                const sellCount = history
+                  ? toNumber(history.current_order_sell_count)
+                  : 0;
+                const orderTotal = buyCount + sellCount;
+                const buyPct =
+                  orderTotal > 0 ? (buyCount / orderTotal) * 100 : 50;
+                const sellPct =
+                  orderTotal > 0 ? (sellCount / orderTotal) * 100 : 50;
 
                 return (
                   <TableRow
@@ -620,25 +791,44 @@ export default function Dashboard() {
                     }
                   >
                     <TableCell variant="primary">
-                      <div>#{account.acc_number}</div>
-                    </TableCell>
-                    <TableCell variant="primary">
-                      <div className="font-medium text-white">
-                        {account.name || "Unnamed Account"}
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-indigo-400" />
+                        #{account.acc_number}
                       </div>
                     </TableCell>
-                    <TableCell>{account.run_at_title || "-"}</TableCell>
-                    <TableCell>{formatCurrency(account.balance)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="font-sans font-bold text-ink">
+                          {account.name || "Unnamed Account"}
+                        </span>
+                        {!isFresh && (
+                          <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 font-sans text-[10px] font-bold text-rose-600 shadow-sm">
+                            Inactive
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium text-slate-400">
+                      {account.run_at_title || "-"}
+                    </TableCell>
                     <TableCell
+                      align="right"
+                      className="font-tabular font-bold text-ink"
+                    >
+                      {formatCurrency(account.balance)}
+                    </TableCell>
+                    <TableCell
+                      align="right"
                       variant={
                         toNumber(account.equity) >= toNumber(account.balance)
                           ? "success"
-                          : "danger"
+                          : "warning"
                       }
                     >
                       {formatCurrency(account.equity)}
                     </TableCell>
                     <TableCell
+                      align="right"
                       variant={
                         history && toNumber(history.current_profit) >= 0
                           ? "success"
@@ -647,25 +837,46 @@ export default function Dashboard() {
                     >
                       {history ? formatCurrency(history.current_profit) : "-"}
                     </TableCell>
-                    <TableCell>
-                      {history ? history.current_total_trade : "-"}
-                    </TableCell>
-                    <TableCell>
+                    <TableCell align="center">
                       {history ? (
-                        <>
-                          <span className="text-green-400">
-                            {history.current_order_buy_count}
-                          </span>
-                          <span className="mx-1 text-gray-500">|</span>
-                          <span className="text-red-400">
-                            {history.current_order_sell_count}
-                          </span>
-                        </>
+                        <span className="font-tabular inline-flex h-6 min-w-[30px] items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-2.5 font-bold text-blue-700 shadow-sm">
+                          {history.current_total_trade}
+                        </span>
                       ) : (
-                        <span className="text-gray-500">-</span>
+                        <span className="text-slate-400">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell align="center">
+                      {history ? (
+                        <div className="mx-auto flex w-full max-w-[130px] flex-col items-center gap-1.5">
+                          <div className="flex w-full items-center justify-between px-1 text-xs font-bold">
+                            <span className="font-tabular text-emerald-600">
+                              {history.current_order_buy_count}
+                            </span>
+                            <span className="text-[10px] text-slate-300">
+                              |
+                            </span>
+                            <span className="font-tabular text-rose-500">
+                              {history.current_order_sell_count}
+                            </span>
+                          </div>
+                          <div className="flex h-2 w-full overflow-hidden rounded-full border border-slate-200/80 bg-slate-100 shadow-inner">
+                            <div
+                              className="h-full rounded-l-full bg-emerald-400"
+                              style={{ width: `${buyPct}%` }}
+                            />
+                            <div
+                              className="h-full rounded-r-full bg-rose-400"
+                              style={{ width: `${sellPct}%` }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400">-</span>
                       )}
                     </TableCell>
                     <TableCell
+                      align="right"
                       variant={
                         history && toNumber(history.history_profit) >= 0
                           ? "success"
@@ -674,25 +885,32 @@ export default function Dashboard() {
                     >
                       {history ? formatCurrency(history.history_profit) : "-"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell
+                      align="center"
+                      className="font-tabular text-slate-500"
+                    >
                       {history ? history.history_total_trade : "-"}
                     </TableCell>
                     <TableCell>
                       {history ? (
-                        <div className="flex items-center gap-2">
-                          <div
+                        <div className="inline-flex items-center gap-2">
+                          <span
                             className={`h-2 w-2 rounded-full ${
-                              isFresh ? "bg-green-500" : "bg-red-500"
+                              isFresh ? "bg-emerald-400" : "bg-rose-400"
                             }`}
                           />
-                          <span className="text-gray-300">
+                          <span
+                            className={`font-tabular font-medium ${
+                              isFresh ? "text-emerald-700" : "text-rose-600"
+                            }`}
+                          >
                             {isClient ? formatTime(history.updated_at) : "-"}
                           </span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 rounded-full bg-gray-500" />
-                          <span className="text-gray-500">-</span>
+                        <div className="inline-flex items-center gap-2 text-slate-400">
+                          <span className="h-2 w-2 rounded-full bg-slate-300" />
+                          <span>-</span>
                         </div>
                       )}
                     </TableCell>
@@ -701,7 +919,36 @@ export default function Dashboard() {
               })}
             </TableBody>
           </Table>
-        </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5 font-mono text-xs text-slate-500">
+            <div className="flex items-center gap-3">
+              <span>
+                Showing {filteredAccounts.length} of {accounts.length} nodes
+              </span>
+              <span className="text-slate-300">|</span>
+              <span
+                className={`flex items-center gap-1.5 font-semibold ${
+                  isConnected ? "text-emerald-700" : "text-rose-600"
+                }`}
+              >
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    isConnected
+                      ? "animate-pulse bg-emerald-400"
+                      : "bg-rose-400"
+                  }`}
+                />
+                {isConnected ? "WebSocket Streaming" : "Offline"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400">Auto-refresh:</span>
+              <span className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 font-semibold text-ink shadow-sm">
+                Realtime
+              </span>
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   );

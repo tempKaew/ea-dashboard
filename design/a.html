@@ -1,0 +1,1417 @@
+<!doctype html>
+
+<html class="light" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Infinity MiningX - Quantitative Trading Dashboard</title>
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <!-- Tailwind CSS v3 with Plugins -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Tailwind Custom Configuration -->
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: [
+                "Plus Jakarta Sans",
+                "-apple-system",
+                "BlinkMacSystemFont",
+                "sans-serif",
+              ],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            colors: {
+              pastel: {
+                cream: "#faf8f5",
+                lavender: "#F4F0FF",
+                lavenderBorder: "#E2D9F3",
+                blue: "#EFF6FF",
+                blueBorder: "#DBEAFE",
+                mint: "#EBFDF4",
+                mintBorder: "#D1F7E2",
+                peach: "#FFF8F1",
+                peachBorder: "#FED7AA",
+                butter: "#FEF9C3",
+                pink: "#FDF2F8",
+                pinkBorder: "#FBCFE8",
+                rose: "#FFE4E6",
+                roseBorder: "#FECDD3",
+              },
+            },
+            boxShadow: {
+              "pastel-sm": "0 2px 10px rgba(180, 160, 200, 0.08)",
+              "pastel-md": "0 8px 24px rgba(160, 150, 190, 0.12)",
+              "pastel-pink": "0 8px 20px -4px rgba(244, 114, 182, 0.2)",
+              "pastel-mint": "0 8px 20px -4px rgba(52, 211, 153, 0.2)",
+              "pastel-blue": "0 8px 20px -4px rgba(96, 165, 250, 0.2)",
+            },
+          },
+        },
+      };
+    </script>
+    <style data-purpose="custom-enhancements">
+      body {
+        background-color: #faf8f5;
+        color: #334155;
+        font-family:
+          "Plus Jakarta Sans",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      .font-tabular {
+        font-variant-numeric: tabular-nums;
+      }
+      /* Cute subtle pastel dots overlay */
+      .grid-pattern {
+        background-image: radial-gradient(
+          rgba(148, 163, 184, 0.18) 1.2px,
+          transparent 1.2px
+        );
+        background-size: 20px 20px;
+      }
+      /* Bubbly pastel panel */
+      .pastel-card {
+        background: #ffffff;
+        border: 1.5px solid rgba(226, 232, 240, 0.85);
+        box-shadow: 0 4px 20px -2px rgba(148, 163, 184, 0.12);
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .pastel-card:hover {
+        box-shadow: 0 10px 28px -4px rgba(148, 163, 184, 0.18);
+        transform: translateY(-1.5px);
+      }
+      /* Custom cute scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 9999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+    </style>
+  </head>
+  <body
+    class="relative min-h-screen bg-[#faf8f5] text-slate-700 antialiased selection:bg-pink-200 selection:text-pink-900"
+  >
+    <!-- Ambient Background Dreamy Pastel Blurs -->
+    <div class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+      <div
+        class="absolute -top-28 left-1/4 h-[380px] w-[520px] rounded-full bg-pink-200/40 blur-[110px]"
+      ></div>
+      <div
+        class="absolute top-1/4 -right-20 h-[420px] w-[480px] rounded-full bg-emerald-100/50 blur-[120px]"
+      ></div>
+      <div
+        class="absolute bottom-10 left-10 h-[360px] w-[550px] rounded-full bg-sky-200/40 blur-[120px]"
+      ></div>
+      <div
+        class="absolute right-1/4 bottom-0 h-[320px] w-[420px] rounded-full bg-amber-100/50 blur-[100px]"
+      ></div>
+      <div class="grid-pattern absolute inset-0 opacity-40"></div>
+    </div>
+    <!-- BEGIN: MainContainer -->
+    <div
+      class="relative z-10 mx-auto flex min-h-screen max-w-[1480px] flex-col justify-between px-3.5 py-4 sm:px-6 sm:py-5 lg:px-8"
+    >
+      <!-- BEGIN: TopHeader -->
+      <header
+        class="pastel-card shadow-pastel-sm mb-5 flex w-full flex-wrap items-center justify-between gap-4 rounded-3xl border-slate-200/80 px-4 py-3.5 sm:px-6"
+      >
+        <!-- Brand & Left Navigation Links -->
+        <div class="flex items-center gap-4 sm:gap-6">
+          <!-- Hamburger Toggle -->
+          <button
+            aria-label="Toggle Navigation Sidebar"
+            class="rounded-2xl border border-slate-200/60 p-2 text-slate-400 transition-all hover:bg-slate-100/80 hover:text-slate-700 active:scale-95"
+            type="button"
+          >
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewbox="0 0 24 24"
+            >
+              <path
+                d="M4 6h16M4 12h16M4 18h16"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2.5"
+              ></path>
+            </svg>
+          </button>
+          <!-- Logo -->
+          <div class="group flex cursor-pointer items-center gap-3">
+            <div
+              class="relative h-9 w-9 rounded-2xl bg-gradient-to-tr from-pink-300 via-purple-300 to-teal-200 p-[1.5px] shadow-sm transition-all duration-300 group-hover:scale-105"
+            >
+              <div
+                class="flex h-full w-full items-center justify-center rounded-[14px] bg-white"
+              >
+                <svg
+                  class="h-4.5 w-4.5 text-teal-600 transition-transform duration-300 group-hover:rotate-12"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  viewbox="0 0 24 24"
+                >
+                  <path
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  ></path>
+                </svg>
+              </div>
+              <span
+                class="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-white"
+              ></span>
+            </div>
+            <div class="flex items-baseline gap-1.5">
+              <span
+                class="font-sans text-[17px] font-bold tracking-tight text-slate-800"
+                >Infinity</span
+              >
+              <span
+                class="bg-gradient-to-r from-teal-500 via-purple-500 to-pink-500 bg-clip-text text-[17px] font-extrabold tracking-tight text-transparent"
+                >MiningX</span
+              >
+              <span
+                class="ml-1 rounded-full border border-purple-200 bg-purple-50 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-purple-600 uppercase"
+                >QUANT 🌸</span
+              >
+            </div>
+          </div>
+          <!-- Terminal Status Pill & UTC Synchronizer -->
+          <div
+            class="hidden items-center gap-3 border-l border-slate-200 pl-4 text-xs md:flex"
+          >
+            <div
+              class="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 font-medium text-emerald-700 shadow-sm"
+            >
+              <span class="relative flex h-2 w-2">
+                <span
+                  class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"
+                ></span>
+                <span
+                  class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"
+                ></span>
+              </span>
+              <span class="text-[11px] font-bold tracking-wide uppercase"
+                >Online 🌸 Live Engine</span
+              >
+            </div>
+            <div
+              class="flex items-center gap-1.5 rounded-full border border-slate-200/50 bg-slate-100/70 px-2.5 py-1 font-mono text-[11px] text-slate-500"
+            >
+              <span class="text-slate-400">Last sync:</span>
+              <span class="font-tabular font-semibold text-slate-700"
+                >17:01:46</span
+              >
+              <span
+                class="py-0.2 rounded-full border border-purple-100 bg-white px-1.5 text-[9px] font-bold tracking-wider text-purple-600 uppercase"
+                >UTC</span
+              >
+            </div>
+          </div>
+        </div>
+        <!-- Right Utility Bar -->
+        <div class="flex items-center gap-2 sm:gap-2.5">
+          <!-- Latency Pill -->
+          <div
+            class="hidden items-center gap-2 rounded-2xl border border-teal-200/80 bg-teal-50/70 px-3 py-1.5 font-mono text-xs text-teal-700 lg:flex"
+            title="Broker Gateway Latency"
+          >
+            <div class="flex items-center gap-1.5 font-semibold text-teal-600">
+              <span
+                class="inline-block h-2 w-2 animate-pulse rounded-full bg-teal-400"
+              ></span>
+              <span>12ms</span>
+            </div>
+            <span class="text-teal-200">|</span>
+            <span
+              class="flex items-center gap-1 font-sans text-[11px] font-medium text-slate-500"
+            >
+              <svg
+                class="h-3 w-3 text-teal-500"
+                fill="none"
+                stroke="currentColor"
+                viewbox="0 0 24 24"
+              >
+                <path
+                  d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                ></path>
+              </svg>
+              SG-01
+            </span>
+          </div>
+          <!-- Notification Bell -->
+          <button
+            aria-label="Notifications"
+            class="relative rounded-2xl border border-slate-200/70 p-2 text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-800 active:scale-95"
+            type="button"
+          >
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewbox="0 0 24 24"
+            >
+              <path
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+              ></path>
+            </svg>
+            <span
+              class="absolute top-2 right-2 h-2 w-2 rounded-full bg-pink-400 ring-2 ring-white"
+            ></span>
+          </button>
+          <!-- Quick Settings Button -->
+          <button
+            aria-label="System Settings"
+            class="rounded-2xl border border-slate-200/70 p-2 text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-800 active:scale-95"
+            type="button"
+          >
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewbox="0 0 24 24"
+            >
+              <path
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+              ></path>
+              <path
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+              ></path>
+            </svg>
+          </button>
+          <!-- Trader User Avatar & Status -->
+          <div class="flex items-center gap-2.5 border-l border-slate-200 pl-2">
+            <div
+              class="relative flex h-8 w-8 items-center justify-center rounded-2xl border border-white bg-gradient-to-tr from-pink-300 to-indigo-200 text-xs font-bold text-indigo-900 shadow-sm"
+            >
+              MX
+              <div
+                class="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-white"
+              ></div>
+            </div>
+            <div class="hidden text-left text-xs leading-tight sm:block">
+              <p class="flex items-center gap-1 font-bold text-slate-800">
+                MX Admin ✨
+              </p>
+              <p class="text-[10px] font-semibold tracking-wide text-teal-600">
+                PRO TRADER
+              </p>
+            </div>
+          </div>
+        </div>
+      </header>
+      <!-- END: TopHeader -->
+      <!-- BEGIN: TopMetricsOverview -->
+      <section
+        aria-label="Key Performance Indicators"
+        class="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-5"
+      >
+        <!-- Metric 1: Total Accounts (Baby Sky Blue Pastel) -->
+        <div
+          class="pastel-card relative flex flex-col justify-between overflow-hidden rounded-3xl border-blue-200/80 bg-gradient-to-b from-[#F0F7FF] to-white p-4 sm:p-4.5"
+        >
+          <div
+            class="pointer-events-none absolute -right-4 -bottom-4 h-16 w-16 rounded-full bg-blue-200/40 blur-lg"
+          ></div>
+          <div
+            class="relative z-10 mb-2 flex items-center justify-between text-slate-500"
+          >
+            <span
+              class="flex items-center gap-1.5 font-mono text-[11px] font-bold tracking-wider text-blue-700 uppercase"
+            >
+              <span class="h-2 w-2 rounded-full bg-blue-400"></span>
+              TOTAL ACCOUNTS
+            </span>
+            <div
+              class="flex h-8 w-8 items-center justify-center rounded-2xl border border-blue-200 bg-blue-100/80 text-blue-600 shadow-sm"
+            >
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewbox="0 0 24 24"
+              >
+                <path
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.8"
+                ></path>
+              </svg>
+            </div>
+          </div>
+          <div class="relative z-10 my-1 flex items-baseline gap-2">
+            <span
+              class="font-tabular font-mono text-3xl font-extrabold tracking-tight text-blue-900"
+              >1</span
+            >
+            <span
+              class="rounded-full bg-blue-100/60 px-2 py-0.5 text-xs font-medium text-blue-600"
+              >active pool</span
+            >
+          </div>
+          <div
+            class="relative z-10 mt-2.5 flex items-center gap-1.5 border-t border-blue-100 pt-2 font-mono text-[11px] text-slate-500"
+          >
+            <span class="h-1.5 w-1.5 rounded-full bg-blue-400"></span>
+            <span class="font-semibold text-blue-700">100%</span> capacity ready
+            ✨
+          </div>
+        </div>
+        <!-- Metric 2: Total Balance (Creamy Mint Pastel) -->
+        <div
+          class="pastel-card relative flex flex-col justify-between overflow-hidden rounded-3xl border-emerald-200/80 bg-gradient-to-b from-[#F3FBF7] to-white p-4 sm:p-4.5"
+        >
+          <div
+            class="pointer-events-none absolute -right-4 -bottom-4 h-16 w-16 rounded-full bg-emerald-200/40 blur-lg"
+          ></div>
+          <div
+            class="relative z-10 mb-2 flex items-center justify-between text-slate-500"
+          >
+            <span
+              class="flex items-center gap-1.5 font-mono text-[11px] font-bold tracking-wider text-emerald-800 uppercase"
+            >
+              <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+              TOTAL BALANCE
+            </span>
+            <div
+              class="flex h-8 w-8 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-100/80 text-emerald-600 shadow-sm"
+            >
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewbox="0 0 24 24"
+              >
+                <path
+                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.8"
+                ></path>
+              </svg>
+            </div>
+          </div>
+          <div class="relative z-10 my-1 flex items-baseline">
+            <span
+              class="font-tabular font-mono text-3xl font-extrabold tracking-tight text-slate-800"
+              >$3,404.32</span
+            >
+          </div>
+          <div
+            class="relative z-10 mt-2.5 flex items-center justify-between border-t border-emerald-100 pt-2 font-mono text-[11px] text-slate-500"
+          >
+            <span class="text-slate-500">Allocated:</span>
+            <span
+              class="rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 font-bold text-emerald-700"
+              >100.0%</span
+            >
+          </div>
+        </div>
+        <!-- Metric 3: Total Equity (Warm Butter Pastel) -->
+        <div
+          class="pastel-card relative flex flex-col justify-between overflow-hidden rounded-3xl border-amber-200/90 bg-gradient-to-b from-[#FEFCE8] to-white p-4 sm:p-4.5"
+        >
+          <div
+            class="pointer-events-none absolute -right-4 -bottom-4 h-16 w-16 rounded-full bg-amber-200/40 blur-lg"
+          ></div>
+          <div
+            class="relative z-10 mb-2 flex items-center justify-between text-slate-500"
+          >
+            <span
+              class="flex items-center gap-1.5 font-mono text-[11px] font-bold tracking-wider text-amber-700 uppercase"
+            >
+              <span class="h-2 w-2 rounded-full bg-amber-400"></span>
+              TOTAL EQUITY
+            </span>
+            <div
+              class="flex h-8 w-8 items-center justify-center rounded-2xl border border-amber-200 bg-amber-100/90 text-amber-600 shadow-sm"
+            >
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewbox="0 0 24 24"
+              >
+                <path
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.8"
+                ></path>
+              </svg>
+            </div>
+          </div>
+          <div class="relative z-10 my-1 flex items-baseline">
+            <span
+              class="font-tabular font-mono text-3xl font-extrabold tracking-tight text-amber-700"
+              >$2,656.89</span
+            >
+          </div>
+          <div
+            class="relative z-10 mt-2.5 flex items-center justify-between border-t border-amber-100 pt-2 font-mono text-[11px] text-slate-500"
+          >
+            <span class="text-slate-500">Margin Level:</span>
+            <span
+              class="rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 font-bold text-amber-800"
+              >78.04%</span
+            >
+          </div>
+        </div>
+        <!-- Metric 4: Current P/L (Soft Strawberry Milkshake Pink) -->
+        <div
+          class="pastel-card relative flex flex-col justify-between overflow-hidden rounded-3xl border-pink-200 bg-gradient-to-b from-[#FFF1F2] to-white p-4 sm:p-4.5"
+        >
+          <div
+            class="pointer-events-none absolute -right-4 -bottom-4 h-16 w-16 rounded-full bg-pink-200/50 blur-lg"
+          ></div>
+          <div
+            class="relative z-10 mb-2 flex items-center justify-between text-slate-500"
+          >
+            <span
+              class="flex items-center gap-1.5 font-mono text-[11px] font-bold tracking-wider text-rose-700 uppercase"
+            >
+              <span class="relative flex h-2 w-2">
+                <span
+                  class="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75"
+                ></span>
+                <span
+                  class="relative inline-flex h-2 w-2 rounded-full bg-rose-500"
+                ></span>
+              </span>
+              CURRENT P/L
+            </span>
+            <div
+              class="flex h-8 w-8 items-center justify-center rounded-2xl border border-rose-200 bg-rose-100 text-rose-600 shadow-sm"
+            >
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewbox="0 0 24 24"
+              >
+                <path
+                  d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                ></path>
+              </svg>
+            </div>
+          </div>
+          <div class="relative z-10 my-1 flex items-baseline gap-2">
+            <span
+              class="font-tabular font-mono text-3xl font-extrabold tracking-tight text-rose-600"
+              >-$747.43</span
+            >
+            <span
+              class="font-tabular rounded-full bg-rose-100 px-2 py-0.5 font-mono text-xs font-semibold text-rose-600"
+              >-$747.43</span
+            >
+          </div>
+          <div
+            class="relative z-10 mt-2.5 flex items-center gap-1.5 border-t border-rose-100 pt-2 font-mono text-[11px] text-rose-600"
+          >
+            <span class="h-1.5 w-1.5 rounded-full bg-rose-400"></span>
+            <span class="font-medium">Unrealized Float Drawdown 🍓</span>
+          </div>
+        </div>
+        <!-- Metric 5: Today P/L (Fresh Matcha Mint Pastel) -->
+        <div
+          class="pastel-card relative flex flex-col justify-between overflow-hidden rounded-3xl border-emerald-200 bg-gradient-to-b from-[#ECFDF5] to-white p-4 sm:p-4.5"
+        >
+          <div
+            class="pointer-events-none absolute -right-4 -bottom-4 h-16 w-16 rounded-full bg-emerald-200/50 blur-lg"
+          ></div>
+          <div
+            class="relative z-10 mb-2 flex items-center justify-between text-slate-500"
+          >
+            <span
+              class="flex items-center gap-1.5 font-mono text-[11px] font-bold tracking-wider text-emerald-800 uppercase"
+            >
+              <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+              TODAY P/L
+            </span>
+            <div
+              class="flex h-8 w-8 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-100 text-emerald-700 shadow-sm"
+            >
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewbox="0 0 24 24"
+              >
+                <path
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                ></path>
+              </svg>
+            </div>
+          </div>
+          <div class="relative z-10 my-1 flex items-baseline gap-2">
+            <span
+              class="font-tabular font-mono text-3xl font-extrabold tracking-tight text-emerald-600"
+              >$0.00</span
+            >
+            <span
+              class="font-tabular rounded-full bg-emerald-100 px-2 py-0.5 font-mono text-xs font-semibold text-emerald-700"
+              >$0.00</span
+            >
+          </div>
+          <div
+            class="relative z-10 mt-2.5 flex items-center justify-between border-t border-emerald-100 pt-2 font-mono text-[11px] text-emerald-700"
+          >
+            <span>Realized today:</span>
+            <span
+              class="rounded-full border border-emerald-200 bg-emerald-100/80 px-2 py-0.5 font-bold text-emerald-800"
+              >Closed: 0 🌱</span
+            >
+          </div>
+        </div>
+      </section>
+      <!-- END: TopMetricsOverview -->
+      <!-- BEGIN: MainDataSection -->
+      <main
+        class="pastel-card mb-5 w-full overflow-hidden rounded-3xl border-slate-200/80"
+      >
+        <!-- Sub-header: Toolbar & Modern Segmented Controls -->
+        <div
+          class="flex flex-col justify-between gap-4 border-b border-slate-100 bg-gradient-to-r from-purple-50/50 via-pink-50/30 to-blue-50/40 p-4 sm:p-5 lg:flex-row lg:items-center"
+        >
+          <!-- Table Title and Counter -->
+          <div class="flex items-center gap-3">
+            <div
+              class="h-6 w-2.5 rounded-full bg-gradient-to-b from-pink-400 via-purple-400 to-teal-400"
+            ></div>
+            <h2
+              class="flex items-center gap-2.5 text-base font-bold tracking-tight text-slate-800 sm:text-lg"
+            >
+              <span>Trading Accounts Today 12/11/2569</span>
+              <span
+                class="rounded-full border border-purple-200 bg-white px-3 py-0.5 font-mono text-xs font-bold text-purple-700 shadow-sm"
+                >(1 acc)</span
+              >
+            </h2>
+          </div>
+          <!-- Filter Selects & Status Controls -->
+          <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            <!-- Dropdown: All Run At -->
+            <div class="relative">
+              <select
+                aria-label="Run filter"
+                class="cursor-pointer appearance-none rounded-2xl border border-blue-200 bg-white px-3.5 py-2 pr-8 text-xs font-semibold text-blue-700 shadow-sm transition-all hover:bg-slate-50 focus:border-blue-400 focus:ring-2 focus:ring-blue-300"
+              >
+                <option>All Run At</option>
+                <option>Immediate</option>
+                <option>Scheduled</option>
+              </select>
+              <div
+                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-blue-500"
+              >
+                <svg
+                  class="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewbox="0 0 24 24"
+                >
+                  <path
+                    d="M19 9l-7 7-7-7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                  ></path>
+                </svg>
+              </div>
+            </div>
+            <!-- Dropdown: Today Selector -->
+            <div class="relative">
+              <select
+                aria-label="Date preset"
+                class="cursor-pointer appearance-none rounded-2xl border border-emerald-200 bg-white px-3.5 py-2 pr-8 text-xs font-semibold text-emerald-700 shadow-sm transition-all hover:bg-slate-50 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-300"
+              >
+                <option>Today</option>
+                <option>Yesterday</option>
+                <option>This Week</option>
+                <option>Custom Range</option>
+              </select>
+              <div
+                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-emerald-500"
+              >
+                <svg
+                  class="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewbox="0 0 24 24"
+                >
+                  <path
+                    d="M19 9l-7 7-7-7"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2.5"
+                  ></path>
+                </svg>
+              </div>
+            </div>
+            <!-- Inactive Badge Toggle Filter -->
+            <div
+              class="inline-flex items-center gap-1.5 rounded-2xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-700 shadow-sm"
+            >
+              <span
+                class="h-2 w-2 animate-pulse rounded-full bg-rose-400 shadow-sm shadow-rose-300"
+              ></span>
+              <span>Inactive</span>
+            </div>
+            <!-- CSV Export Button -->
+            <button
+              class="group inline-flex items-center gap-1.5 rounded-2xl border border-purple-200 bg-purple-50 px-3.5 py-2 text-xs font-bold text-purple-700 shadow-sm transition-all hover:bg-purple-100 active:scale-95"
+              title="Export current accounts data"
+              type="button"
+            >
+              <svg
+                class="h-3.5 w-3.5 text-purple-500 transition-transform group-hover:scale-110"
+                fill="none"
+                stroke="currentColor"
+                viewbox="0 0 24 24"
+              >
+                <path
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                ></path>
+              </svg>
+              <span>Export CSV</span>
+            </button>
+            <!-- Refresh Rate Button -->
+            <button
+              class="group rounded-2xl border border-teal-200 bg-teal-50 p-2 text-teal-700 shadow-sm transition-all hover:bg-teal-100 active:scale-95"
+              title="Sync live updates"
+              type="button"
+            >
+              <svg
+                class="h-4 w-4 text-teal-600 transition-transform duration-500 group-hover:rotate-180"
+                fill="none"
+                stroke="currentColor"
+                viewbox="0 0 24 24"
+              >
+                <path
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <!-- High Density Table with Pastel Accents -->
+        <div class="w-full overflow-x-auto">
+          <table class="w-full border-collapse text-left text-xs">
+            <thead>
+              <tr
+                class="border-b border-slate-200/80 bg-slate-50/80 font-mono text-[11px] font-bold tracking-wider text-slate-500 uppercase select-none"
+              >
+                <th class="px-4 py-3.5" scope="col">ACCOUNT</th>
+                <th class="px-4 py-3.5" scope="col">
+                  <div class="flex items-center gap-1.5 text-slate-700">
+                    <span>NAME</span>
+                    <svg
+                      class="h-3 w-3 text-teal-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewbox="0 0 24 24"
+                    >
+                      <path
+                        d="M5 15l7-7 7 7"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2.5"
+                      ></path>
+                    </svg>
+                  </div>
+                </th>
+                <th class="px-4 py-3.5" scope="col">RUN AT</th>
+                <th class="px-4 py-3.5 text-right" scope="col">BALANCE</th>
+                <th class="px-4 py-3.5 text-right" scope="col">EQUITY</th>
+                <th class="px-4 py-3.5 text-right" scope="col">
+                  CURRENT P&amp;L
+                </th>
+                <th class="px-4 py-3.5 text-center" scope="col">OPEN</th>
+                <th class="min-w-[140px] px-4 py-3.5 text-center" scope="col">
+                  BUY | SELL
+                </th>
+                <th class="px-4 py-3.5 text-right" scope="col">
+                  TODAY P&amp;L
+                </th>
+                <th class="px-4 py-3.5 text-center" scope="col">CLOSED</th>
+                <th class="px-4 py-3.5" scope="col">LAST UPDATE</th>
+                <th class="px-4 py-3.5 text-right" scope="col">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-mono text-slate-600">
+              <!-- Row 1: Account #257288993 -->
+              <tr class="group transition-colors hover:bg-purple-50/30">
+                <!-- Account Number -->
+                <td
+                  class="px-4 py-4 font-bold whitespace-nowrap text-indigo-600 transition-colors group-hover:text-indigo-700"
+                >
+                  <div class="flex items-center gap-2">
+                    <span class="h-2 w-2 rounded-full bg-indigo-400"></span>
+                    #257288993
+                  </div>
+                </td>
+                <!-- Bot / Strategy Name with Inactive Pill -->
+                <td class="px-4 py-4 whitespace-nowrap">
+                  <div class="flex items-center gap-2">
+                    <span class="font-sans font-bold text-slate-800"
+                      >MiningX_JIMMY</span
+                    >
+                    <span
+                      class="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 font-sans text-[10px] font-bold text-rose-600 shadow-sm"
+                    >
+                      Inactive
+                    </span>
+                  </div>
+                </td>
+                <!-- Run At -->
+                <td class="px-4 py-4 font-medium text-slate-400">-</td>
+                <!-- Balance -->
+                <td
+                  class="font-tabular px-4 py-4 text-right font-bold text-slate-800"
+                >
+                  $3,404.32
+                </td>
+                <!-- Equity -->
+                <td
+                  class="font-tabular px-4 py-4 text-right font-bold text-amber-700"
+                >
+                  $2,656.89
+                </td>
+                <!-- Current P/L -->
+                <td
+                  class="font-tabular px-4 py-4 text-right font-bold text-rose-600"
+                >
+                  -$747.43
+                </td>
+                <!-- Open Positions Total -->
+                <td class="px-4 py-4 text-center">
+                  <span
+                    class="font-tabular inline-flex h-6 min-w-[30px] items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-2.5 font-bold text-blue-700 shadow-sm"
+                  >
+                    15
+                  </span>
+                </td>
+                <!-- Buy | Sell Visual Ratio (9 | 6) -->
+                <td class="px-4 py-4">
+                  <div
+                    class="mx-auto flex w-full max-w-[130px] flex-col items-center gap-1.5"
+                  >
+                    <div
+                      class="flex w-full items-center justify-between px-1 text-xs font-bold"
+                    >
+                      <span class="font-tabular text-emerald-600">9</span>
+                      <span class="text-[10px] text-slate-300">|</span>
+                      <span class="font-tabular text-rose-500">6</span>
+                    </div>
+                    <!-- Cute Candy split progress bar (60% buy / 40% sell) -->
+                    <div
+                      class="flex h-2 w-full overflow-hidden rounded-full border border-slate-200/80 bg-slate-100 shadow-inner"
+                    >
+                      <div
+                        class="h-full rounded-l-full bg-emerald-400"
+                        style="width: 60%"
+                      ></div>
+                      <div
+                        class="h-full rounded-r-full bg-rose-400"
+                        style="width: 40%"
+                      ></div>
+                    </div>
+                  </div>
+                </td>
+                <!-- Today P/L -->
+                <td
+                  class="font-tabular px-4 py-4 text-right font-bold text-emerald-600"
+                >
+                  $0.00
+                </td>
+                <!-- Closed Trades -->
+                <td class="font-tabular px-4 py-4 text-center text-slate-500">
+                  0
+                </td>
+                <!-- Last Update -->
+                <td class="px-4 py-4 whitespace-nowrap">
+                  <div class="inline-flex items-center gap-2 text-slate-600">
+                    <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                    <span class="font-tabular font-medium text-emerald-700"
+                      >17:00:14</span
+                    >
+                  </div>
+                </td>
+                <!-- Quick Table Actions -->
+                <td class="px-4 py-4 text-right font-sans whitespace-nowrap">
+                  <div class="inline-flex items-center gap-1.5">
+                    <!-- Start/Resume Button in Pastel Emerald -->
+                    <button
+                      aria-label="Start MiningX_JIMMY Bot"
+                      class="rounded-2xl border border-emerald-200 bg-emerald-50 p-2 text-emerald-600 shadow-sm transition-all hover:bg-emerald-100 active:scale-90"
+                      title="Start Strategy Engine"
+                      type="button"
+                    >
+                      <svg
+                        class="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewbox="0 0 24 24"
+                      >
+                        <path
+                          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2.5"
+                        ></path>
+                        <path
+                          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                        ></path>
+                      </svg>
+                    </button>
+                    <!-- View Logs in Pastel Blue -->
+                    <button
+                      aria-label="View Account Orders"
+                      class="rounded-2xl border border-blue-200 bg-blue-50 p-2 text-blue-600 shadow-sm transition-all hover:bg-blue-100 active:scale-90"
+                      title="Open Orders Log"
+                      type="button"
+                    >
+                      <svg
+                        class="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewbox="0 0 24 24"
+                      >
+                        <path
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2.5"
+                        ></path>
+                        <path
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                        ></path>
+                      </svg>
+                    </button>
+                    <!-- Config in Pastel Purple -->
+                    <button
+                      aria-label="Bot Parameters"
+                      class="rounded-2xl border border-purple-200 bg-purple-50 p-2 text-purple-600 shadow-sm transition-all hover:bg-purple-100 active:scale-90"
+                      title="Strategy Configuration"
+                      type="button"
+                    >
+                      <svg
+                        class="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewbox="0 0 24 24"
+                      >
+                        <path
+                          d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                        ></path>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Table Status Footnote -->
+        <div
+          class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5 font-mono text-xs text-slate-500"
+        >
+          <div class="flex items-center gap-3">
+            <span>Showing 1 of 1 active nodes</span>
+            <span class="text-slate-300">|</span>
+            <span
+              class="flex items-center gap-1.5 font-semibold text-emerald-700"
+            >
+              <span
+                class="h-2 w-2 animate-pulse rounded-full bg-emerald-400"
+              ></span>
+              WebSocket Streaming 🍃
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400">Auto-refresh:</span>
+            <span
+              class="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 font-semibold text-slate-700 shadow-sm"
+              >Realtime (0.5s)</span
+            >
+          </div>
+        </div>
+      </main>
+      <!-- END: MainDataSection -->
+      <!-- BEGIN: ProAnalyticsWidgets -->
+      <section
+        aria-label="Detailed Analytics and System Monitors"
+        class="mb-3 grid grid-cols-1 gap-4 lg:grid-cols-3"
+      >
+        <!-- Widget 1: Equity vs Balance Sparkline Timeline -->
+        <div
+          class="pastel-card flex flex-col justify-between rounded-3xl border-blue-200/70 bg-gradient-to-b from-[#F0F7FF]/50 to-white p-5"
+        >
+          <div class="mb-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div
+                class="flex h-7 w-7 items-center justify-center rounded-2xl border border-blue-200 bg-blue-100 text-blue-600 shadow-sm"
+              >
+                <svg
+                  class="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewbox="0 0 24 24"
+                >
+                  <path
+                    d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                  ></path>
+                </svg>
+              </div>
+              <h3
+                class="font-mono text-xs font-bold tracking-wider text-blue-800 uppercase"
+              >
+                Equity Curve Simulation
+              </h3>
+            </div>
+            <span
+              class="rounded-full border border-blue-200 bg-blue-100 px-2.5 py-0.5 font-mono text-[10px] font-bold text-blue-700"
+              >Past 24h</span
+            >
+          </div>
+          <!-- Custom SVG Sparkline with Soft Pastel Fill -->
+          <div class="relative my-1 h-32 w-full">
+            <svg
+              class="h-full w-full overflow-visible"
+              preserveaspectratio="none"
+              viewbox="0 0 340 90"
+            >
+              <defs>
+                <lineargradient
+                  id="gradient-equity"
+                  x1="0"
+                  x2="0"
+                  y1="0"
+                  y2="1"
+                >
+                  <stop
+                    offset="0%"
+                    stop-color="#f43f5e"
+                    stop-opacity="0.22"
+                  ></stop>
+                  <stop
+                    offset="80%"
+                    stop-color="#f43f5e"
+                    stop-opacity="0.04"
+                  ></stop>
+                  <stop
+                    offset="100%"
+                    stop-color="#f43f5e"
+                    stop-opacity="0.0"
+                  ></stop>
+                </lineargradient>
+              </defs>
+              <!-- Grid Lines -->
+              <line
+                stroke="rgba(203, 213, 225, 0.4)"
+                stroke-dasharray="3 3"
+                x1="0"
+                x2="340"
+                y1="20"
+                y2="20"
+              ></line>
+              <line
+                stroke="rgba(203, 213, 225, 0.4)"
+                stroke-dasharray="3 3"
+                x1="0"
+                x2="340"
+                y1="50"
+                y2="50"
+              ></line>
+              <line
+                stroke="rgba(203, 213, 225, 0.4)"
+                stroke-dasharray="3 3"
+                x1="0"
+                x2="340"
+                y1="80"
+                y2="80"
+              ></line>
+              <!-- Balance Static Line ($3,404) -->
+              <path
+                d="M 0,25 L 340,25"
+                fill="none"
+                opacity="0.9"
+                stroke="#60a5fa"
+                stroke-dasharray="4 4"
+                stroke-width="1.8"
+              ></path>
+              <!-- Equity Wave Area Fill -->
+              <path
+                d="M 0,35 Q 40,30 80,45 T 160,52 T 240,68 T 340,75 L 340,90 L 0,90 Z"
+                fill="url(#gradient-equity)"
+              ></path>
+              <!-- Equity Wave Line ($2,656) -->
+              <path
+                d="M 0,35 Q 40,30 80,45 T 160,52 T 240,68 T 340,75"
+                fill="none"
+                stroke="#fb7185"
+                stroke-linecap="round"
+                stroke-width="2.8"
+              ></path>
+              <!-- Cute Pulse Dot -->
+              <circle
+                class="animate-ping"
+                cx="340"
+                cy="75"
+                fill="#fb7185"
+                opacity="0.5"
+                r="5"
+              ></circle>
+              <circle
+                cx="340"
+                cy="75"
+                fill="#f43f5e"
+                r="3.5"
+                stroke="#ffffff"
+                stroke-width="2"
+              ></circle>
+            </svg>
+          </div>
+          <div
+            class="flex items-center justify-between border-t border-slate-100 pt-3 font-mono text-[11px] text-slate-500"
+          >
+            <div class="flex items-center gap-1.5">
+              <span class="h-1 w-2.5 rounded-full bg-blue-400"></span>
+              <span
+                >Balance:
+                <strong class="font-tabular text-blue-700"
+                  >$3,404.32</strong
+                ></span
+              >
+            </div>
+            <div class="flex items-center gap-1.5 text-rose-600">
+              <span class="h-1 w-2.5 rounded-full bg-rose-400"></span>
+              <span
+                >Drawdown:
+                <strong class="font-tabular font-bold">-21.9%</strong></span
+              >
+            </div>
+          </div>
+        </div>
+        <!-- Widget 2: Order Bias & Ratio Gauge -->
+        <div
+          class="pastel-card flex flex-col justify-between rounded-3xl border-emerald-200/70 bg-gradient-to-b from-[#ECFDF5]/50 to-white p-5"
+        >
+          <div class="mb-2 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div
+                class="flex h-7 w-7 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-100 text-emerald-700 shadow-sm"
+              >
+                <svg
+                  class="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewbox="0 0 24 24"
+                >
+                  <path
+                    d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                  ></path>
+                  <path
+                    d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                  ></path>
+                </svg>
+              </div>
+              <h3
+                class="font-mono text-xs font-bold tracking-wider text-emerald-800 uppercase"
+              >
+                Position Distribution
+              </h3>
+            </div>
+            <span
+              class="rounded-full border border-emerald-200 bg-emerald-100 px-2.5 py-0.5 font-mono text-xs font-bold text-emerald-700"
+              >15 Active</span
+            >
+          </div>
+          <div class="my-auto py-2">
+            <div class="mb-2 flex items-baseline justify-between font-mono">
+              <div>
+                <span
+                  class="font-tabular text-lg font-extrabold text-emerald-700"
+                  >9 Longs</span
+                >
+                <span
+                  class="font-tabular ml-1 text-xs font-medium text-emerald-600/80"
+                  >(60.0%)</span
+                >
+              </div>
+              <div>
+                <span class="font-tabular text-lg font-extrabold text-rose-600"
+                  >6 Shorts</span
+                >
+                <span
+                  class="font-tabular ml-1 text-xs font-medium text-rose-500/80"
+                  >(40.0%)</span
+                >
+              </div>
+            </div>
+            <!-- Cute Bubbly Candy Gauge -->
+            <div
+              class="flex h-3 w-full gap-1 rounded-full border border-slate-200 bg-slate-100 p-0.5 shadow-inner"
+            >
+              <div
+                class="h-full rounded-l-full bg-emerald-400"
+                style="width: 60%"
+              ></div>
+              <div
+                class="h-full rounded-r-full bg-rose-400"
+                style="width: 40%"
+              ></div>
+            </div>
+            <!-- Exposure Cards in cute pastel boxes -->
+            <div class="mt-3.5 grid grid-cols-2 gap-2.5 font-mono text-xs">
+              <div
+                class="rounded-2xl border border-emerald-200 bg-emerald-50 p-2.5 shadow-sm"
+              >
+                <span
+                  class="block text-[10px] font-bold tracking-wider text-emerald-700 uppercase"
+                  >LONG EXPOSURE</span
+                >
+                <span
+                  class="font-tabular text-sm font-extrabold text-emerald-800"
+                  >$1,594.13</span
+                >
+              </div>
+              <div
+                class="rounded-2xl border border-rose-200 bg-rose-50 p-2.5 shadow-sm"
+              >
+                <span
+                  class="block text-[10px] font-bold tracking-wider text-rose-700 uppercase"
+                  >SHORT EXPOSURE</span
+                >
+                <span class="font-tabular text-sm font-extrabold text-rose-700"
+                  >$1,062.76</span
+                >
+              </div>
+            </div>
+          </div>
+          <div
+            class="flex justify-between border-t border-slate-100 pt-3 font-mono text-[11px] text-slate-500"
+          >
+            <span
+              >Net Delta:
+              <strong class="font-bold text-teal-700"
+                >+0.20 Long Bias</strong
+              ></span
+            >
+            <span
+              >Hedging:
+              <strong
+                class="rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 font-bold text-emerald-700"
+                >Active 🌱</strong
+              ></span
+            >
+          </div>
+        </div>
+        <!-- Widget 3: Engine Telemetry & Health Audit -->
+        <div
+          class="pastel-card flex flex-col justify-between rounded-3xl border-amber-200/70 bg-gradient-to-b from-[#FFFBEB]/50 to-white p-5"
+        >
+          <div class="mb-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div
+                class="flex h-7 w-7 items-center justify-center rounded-2xl border border-amber-200 bg-amber-100 text-amber-700 shadow-sm"
+              >
+                <svg
+                  class="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewbox="0 0 24 24"
+                >
+                  <path
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                  ></path>
+                </svg>
+              </div>
+              <h3
+                class="font-mono text-xs font-bold tracking-wider text-amber-800 uppercase"
+              >
+                Engine Telemetry
+              </h3>
+            </div>
+            <span
+              class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-100 px-3 py-0.5 font-mono text-[11px] font-bold text-emerald-700 shadow-sm"
+            >
+              <span
+                class="h-2 w-2 animate-pulse rounded-full bg-emerald-500"
+              ></span>
+              Synced ✨
+            </span>
+          </div>
+          <!-- Diagnostic rows styled as clean pastel pills -->
+          <div class="my-auto space-y-2 font-mono text-xs">
+            <div
+              class="flex items-center justify-between rounded-2xl border border-amber-200/80 bg-amber-50/70 p-2 px-3"
+            >
+              <span class="font-medium text-slate-700">Bot Daemon (JIMMY)</span>
+              <span
+                class="rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800"
+                >Standby / Paused</span
+              >
+            </div>
+            <div
+              class="flex items-center justify-between rounded-2xl border border-emerald-200/80 bg-emerald-50/70 p-2 px-3"
+            >
+              <span class="font-medium text-slate-700"
+                >Stop-Loss Margin Protection</span
+              >
+              <span
+                class="rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800"
+                >Armed (40.0% Max)</span
+              >
+            </div>
+            <div
+              class="flex items-center justify-between rounded-2xl border border-slate-200/70 bg-slate-50 p-2 px-3"
+            >
+              <span class="text-slate-500">Broker Gateway</span>
+              <span class="font-bold text-indigo-600"
+                >Binance Futures API v3</span
+              >
+            </div>
+            <div
+              class="flex items-center justify-between rounded-2xl border border-slate-200/70 bg-slate-50 p-2 px-3"
+            >
+              <span class="text-slate-500">Execution Slippage</span>
+              <span class="font-bold text-emerald-700">&lt; 0.02%</span>
+            </div>
+          </div>
+          <div
+            class="flex items-center justify-between border-t border-slate-100 pt-3 font-mono text-[11px] text-slate-500"
+          >
+            <span
+              >Server:
+              <strong class="font-bold text-amber-700"
+                >Singapore-Primary</strong
+              ></span
+            >
+            <span
+              >Uptime:
+              <strong class="font-bold text-emerald-700"
+                >99.98% 🌸</strong
+              ></span
+            >
+          </div>
+        </div>
+      </section>
+      <!-- END: ProAnalyticsWidgets -->
+      <!-- BEGIN: TerminalFooter -->
+      <footer
+        class="mt-4 flex flex-col items-center justify-between gap-2.5 border-t border-slate-200/80 pt-3.5 font-mono text-xs text-slate-400 sm:flex-row"
+      >
+        <div class="flex items-center gap-2">
+          <span class="flex items-center gap-1.5 font-bold text-slate-700">
+            <span class="h-2 w-2 rounded-full bg-pink-400"></span>
+            Infinity MiningX Quant Terminal
+          </span>
+          <span class="text-slate-300">•</span>
+          <span class="font-semibold text-purple-600">Pastel Edition</span>
+        </div>
+        <div class="flex items-center gap-4 text-[11px] text-slate-500">
+          <span
+            >Encryption:
+            <span class="font-semibold text-slate-700"
+              >TLS 1.3 256-bit</span
+            ></span
+          >
+          <span class="text-slate-300">|</span>
+          <span class="flex items-center gap-1.5 font-bold text-emerald-700">
+            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+            All Systems Operational 🌸
+          </span>
+        </div>
+      </footer>
+      <!-- END: TerminalFooter -->
+    </div>
+    <!-- END: MainContainer -->
+    <!-- Client Clock & Pulse Script -->
+    <script data-purpose="dashboard-interactions">
+      document.addEventListener("DOMContentLoaded", () => {
+        const lastUpdateClock = document.querySelector(
+          "header span.text-slate-700.font-tabular",
+        );
+        if (lastUpdateClock) {
+          setInterval(() => {
+            const now = new Date();
+            const hours = String(now.getUTCHours()).padStart(2, "0");
+            const minutes = String(now.getUTCMinutes()).padStart(2, "0");
+            const seconds = String(now.getUTCSeconds()).padStart(2, "0");
+            lastUpdateClock.textContent = `${hours}:${minutes}:${seconds}`;
+          }, 1000);
+        }
+      });
+    </script>
+  </body>
+</html>

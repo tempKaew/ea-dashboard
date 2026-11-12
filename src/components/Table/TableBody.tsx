@@ -7,7 +7,9 @@ interface TableBodyProps {
 
 export function TableBody({ children, className = "" }: TableBodyProps) {
   return (
-    <tbody className={`bg-stone-900 divide-y divide-stone-800 ${className}`}>
+    <tbody
+      className={`divide-y divide-slate-100 font-mono text-slate-600 ${className}`}
+    >
       {children}
     </tbody>
   );
