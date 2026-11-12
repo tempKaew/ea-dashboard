@@ -18,7 +18,7 @@ function unauthorized(message = "Unauthorized") {
   });
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   if (!USER || !PASS) {
     return NextResponse.next();
   }
@@ -53,7 +53,7 @@ export function middleware(req: NextRequest) {
     }
 
     return unauthorized("Invalid credentials");
-  } catch (e) {
+  } catch {
     return new Response("Invalid authorization header", { status: 400 });
   }
 }
